@@ -19,7 +19,7 @@ class DB(object):
                 port="5432"
             )
             logger.info("DB connection successful")
-        except Error as e:
+        except Exception as e:
             logger.error(e)
         return conn
 
