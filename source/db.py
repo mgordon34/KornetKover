@@ -29,37 +29,65 @@ class DB(object):
 
     def initialize_tables(self):
         cur = self.conn.cursor()
-        cur.execute("""
+        commands = []
+        commands.append("""
+            CREATE TABLE IF NOT EXISTS teams (
+                index VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+            )""")
+        commands.append("""
             CREATE TABLE IF NOT EXISTS games (
                 id SERIAL PRIMARY KEY,
-                home_team VARCHAR(255) NOT NULL,
-                away_team VARCHAR(255) NOT NULL,
+                home_index VARCHAR(255) REFERENCES teams(index),
+                away_index VARCHAR(255) REFERENCES teams(index),
                 home_score INT NOT NULL,
                 away_score INT NOT NULL,
                 date DATE NOT NULL
             )""")
-        cur.close()
+
+        for command in commands:
+            cur.execute(command)
         self.conn.commit()
+        cur.close()
+
+    def add_team(self, index, name):
+        sql = """INSERT INTO teams(index, name) VALUES(%s, %s) RETURNING index"""
+        res = None
+        try:
+            cur = self.conn.cursor()
+            cur.execute(sql, (index, name))
+            res = cur.fetchone()[0]
+        except(Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        finally:
+            self.conn.commit()
+            cur.close()
+
+        return res
+
 
     def add_game(
         self,
-        home_team,
-        away_team,
+        home_index,
+        away_index,
         home_score,
         away_score,
         date
     ):
-        sql = """INSERT INTO games(home_team, away_team, home_score, away_score, date)
+        sql = """INSERT INTO games(home_index, away_index, home_score, away_score, date)
                  VALUES(%s, %s, %s, %s, %s) RETURNING id"""
+        res = None
         try:
             cur = self.conn.cursor()
-            cur.execute(sql, (home_team, away_team, home_score, away_score, date))
-            id = cur.fetchone()[0]
-            self.conn.commit()
-            cur.close()
+            cur.execute(sql, (home_index, away_index, home_score, away_score, date))
+            res = cur.fetchone()[0]
         except(Exception, psycopg2.DatabaseError) as error:
             print(error)
-        return id
+        finally:
+            self.conn.commit()
+            cur.close()
+
+        return res
 
     def get_games(self):
         cur = self.conn.cursor()
@@ -74,5 +102,9 @@ if __name__ == "__main__":
     db.initialize_tables()
     id = db.add_game("Boston Celtics", "Miami Heat", 104, 94, "2023-09-12")
     print(f"game id: {id}")
+    index = db.add_team("BOS", "Boston Celtics")
+    index = db.add_team("MIA", "Miami Heat")
+    print(f"team index: {index}")
+    id = db.add_game("BOS", "MIA", 104, 94, "2023-09-12")
     print(db.get_games())
     db.close()
