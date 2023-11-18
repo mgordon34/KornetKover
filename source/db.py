@@ -46,7 +46,7 @@ class DB(object):
         home_team,
         away_team,
         home_score,
-        away_score, 
+        away_score,
         date
     ):
         sql = """INSERT INTO games(home_team, away_team, home_score, away_score, date)
@@ -60,7 +60,7 @@ class DB(object):
         except(Exception, psycopg2.DatabaseError) as error:
             print(error)
         return id
-        
+
     def get_games(self):
         cur = self.conn.cursor()
         cur.execute("SELECT * from games;")
