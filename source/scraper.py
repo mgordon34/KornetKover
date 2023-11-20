@@ -16,9 +16,10 @@ class Scraper(object):
         for row in full_team_row:
             team_dict = {}
             team = row.find("th")
-            team_dict["name"] = team.text
-            team_dict["index"] = team.find("a")["href"].split("/")[2]
-            teams.append(team_dict)
+            name = team.text
+            index = team.find("a")["href"].split("/")[2]
+
+            teams.append((index, name))
 
         return teams
 
@@ -26,4 +27,5 @@ if __name__ == "__main__":
     db = DB()
     db.initialize_tables()
     teams = Scraper.get_team_indexes()
-    db.add_teams(teams)
+    num_teams = db.add_teams(teams)
+    print(num_teams)

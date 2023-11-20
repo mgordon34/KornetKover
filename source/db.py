@@ -1,6 +1,6 @@
 import logging
 
-import psycopg2
+import psycopg2, psycopg2.extras
 
 logger = logging.getLogger(__name__)
 
@@ -51,21 +51,20 @@ class DB(object):
         cur.close()
 
     def add_teams(self, teams):
-        sql = """INSERT INTO teams(index, name) VALUES(%s, %s) RETURNING index"""
+        sql = """INSERT INTO teams(index, name) VALUES %s"""
 
-        written_teams = []
-        for team in teams:
-            try:
-                cur = self.conn.cursor()
-                cur.execute(sql, (team["index"], team["name"]))
-                written_teams.append(cur.fetchone()[0])
-            except(Exception, psycopg2.DatabaseError) as error:
+        count = 0
+        try:
+            cur = self.conn.cursor()
+            psycopg2.extras.execute_values(cur, sql, teams)
+        except(Exception, psycopg2.DatabaseError) as error:
                 print(error)
+        finally:
+            count = cur.rowcount
+            self.conn.commit()
+            cur.close()
 
-        self.conn.commit()
-        cur.close()
-
-        return written_teams
+        return count
 
 
     def add_game(
