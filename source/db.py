@@ -58,7 +58,7 @@ class DB(object):
             cur = self.conn.cursor()
             psycopg2.extras.execute_values(cur, sql, teams)
         except(Exception, psycopg2.DatabaseError) as error:
-                print(error)
+            print(error)
         finally:
             count = cur.rowcount
             self.conn.commit()
@@ -66,29 +66,25 @@ class DB(object):
 
         return count
 
-
-    def add_game(
+    def add_games(
         self,
-        home_index,
-        away_index,
-        home_score,
-        away_score,
-        date
+        games
     ):
         sql = """INSERT INTO games(home_index, away_index, home_score, away_score, date)
-                 VALUES(%s, %s, %s, %s, %s) RETURNING id"""
-        res = None
+                 VALUES %s"""
+
+        count = 0
         try:
             cur = self.conn.cursor()
-            cur.execute(sql, (home_index, away_index, home_score, away_score, date))
-            res = cur.fetchone()[0]
+            psycopg2.extras.execute_values(cur, sql, games)
         except(Exception, psycopg2.DatabaseError) as error:
             print(error)
         finally:
+            count = cur.rowcount
             self.conn.commit()
             cur.close()
 
-        return res
+        return count
 
     def get_games(self):
         cur = self.conn.cursor()
@@ -101,11 +97,10 @@ class DB(object):
 if __name__ == "__main__":
     db = DB()
     db.initialize_tables()
-    id = db.add_game("Boston Celtics", "Miami Heat", 104, 94, "2023-09-12")
-    print(f"game id: {id}")
-    index = db.add_team("BOS", "Boston Celtics")
-    index = db.add_team("MIA", "Miami Heat")
-    print(f"team index: {index}")
-    id = db.add_game("BOS", "MIA", 104, 94, "2023-09-12")
+    count = db.add_games([
+        ("BOS", "MIA", 104, 94, "2023-09-12"),
+        ("IND", "PHI", 104, 92, "2023-09-11"),
+    ])
+    print(count)
     print(db.get_games())
     db.close()
