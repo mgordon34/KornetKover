@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 import requests
 
 from db import DB
@@ -23,9 +24,15 @@ class Scraper(object):
 
         return teams
 
+    @classmethod
+    def scrape_games(cls, start_date, end_date):
+        url = "https://www.basketball-reference.com/boxscores/?month=%s&day=%s&year=%s"
+        cur_date = start_date
+        while (cur_date < end_date):
+            print(f"scraping for {cur_date}")
+
+            cur_date += timedelta(days=1)
+
 if __name__ == "__main__":
     db = DB()
-    db.initialize_tables()
-    teams = Scraper.get_team_indexes()
-    num_teams = db.add_teams(teams)
-    print(num_teams)
+    Scraper.scrape_games(datetime.strptime('2023-11-16', '%Y-%m-%d').date(), datetime.strptime('2023-11-23', '%Y-%m-%d').date())
