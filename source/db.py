@@ -50,20 +50,22 @@ class DB(object):
         self.conn.commit()
         cur.close()
 
-    def add_team(self, index, name):
+    def add_teams(self, teams):
         sql = """INSERT INTO teams(index, name) VALUES(%s, %s) RETURNING index"""
-        res = None
-        try:
-            cur = self.conn.cursor()
-            cur.execute(sql, (index, name))
-            res = cur.fetchone()[0]
-        except(Exception, psycopg2.DatabaseError) as error:
-            print(error)
-        finally:
-            self.conn.commit()
-            cur.close()
 
-        return res
+        written_teams = []
+        for team in teams:
+            try:
+                cur = self.conn.cursor()
+                cur.execute(sql, (team["index"], team["name"]))
+                written_teams.append(cur.fetchone()[0])
+            except(Exception, psycopg2.DatabaseError) as error:
+                print(error)
+
+        self.conn.commit()
+        cur.close()
+
+        return written_teams
 
 
     def add_game(

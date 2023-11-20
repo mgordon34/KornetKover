@@ -26,5 +26,4 @@ if __name__ == "__main__":
     db = DB()
     db.initialize_tables()
     teams = Scraper.get_team_indexes()
-    for team in teams:
-        db.add_team(team["index"], team["name"])
+    db.add_teams(teams)
