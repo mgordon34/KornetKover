@@ -4,6 +4,7 @@ import requests
 
 from db import DB
 
+
 class Scraper(object):
     @classmethod
     def get_team_indexes(cls):
@@ -33,6 +34,9 @@ class Scraper(object):
 
             cur_date += timedelta(days=1)
 
+
 if __name__ == "__main__":
-    db = DB()
-    Scraper.scrape_games(datetime.strptime('2023-11-16', '%Y-%m-%d').date(), datetime.strptime('2023-11-23', '%Y-%m-%d').date())
+    # db = DB()
+    start_date = datetime.strptime('2023-11-16', '%Y-%m-%d').date()
+    end_date = datetime.strptime('2023-11-23', '%Y-%m-%d').date()
+    Scraper.scrape_games(start_date, end_date)
