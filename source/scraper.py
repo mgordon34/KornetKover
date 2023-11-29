@@ -1,3 +1,5 @@
+import time
+
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import requests
@@ -32,19 +34,24 @@ class Scraper(object):
         cur_date = start_date
         while cur_date <= end_date:
             print(f"scraping for {cur_date}")
+            time.sleep(4)
             page = requests.get(url.format(cur_date.month, cur_date.day, cur_date.year))
             soup = BeautifulSoup(page.content, "html.parser")
             games = soup.find_all("td", class_="gamelink")
+            print(f"{len(games)} games found")
 
             game_objects = []
             for game in games:
                 game_string = game.find("a")["href"]
                 game_objects.append(cls._scrape_game(game_string) + (cur_date,))
             db.add_games(game_objects)
+            print("--------------------------")
 
             cur_date += timedelta(days=1)
 
     def _scrape_game(game_string):
+        time.sleep(4)
+        print(f"scraping game for {game_string}")
         url = base_url + game_string
         page = requests.get(url)
         soup = BeautifulSoup(page.content, "html.parser")
@@ -58,6 +65,6 @@ class Scraper(object):
 
 if __name__ == "__main__":
     db = DB()
-    start_date = datetime.strptime('2023-04-21', '%Y-%m-%d').date()
-    end_date = datetime.strptime('2023-04-21', '%Y-%m-%d').date()
+    start_date = datetime.strptime('2022-11-26', '%Y-%m-%d').date()
+    end_date = datetime.strptime('2023-10-18', '%Y-%m-%d').date()
     Scraper.scrape_games(start_date, end_date, db)

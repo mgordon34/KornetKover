@@ -44,6 +44,24 @@ class DB(object):
                 away_score INT NOT NULL,
                 date DATE NOT NULL
             )""")
+        commands.append("""
+            CREATE TABLE IF NOT EXISTS players (
+                id SERIAL PRIMARY KEY,
+                index VARCHAR(20) UNIQUE,
+                name VARCHAR(255)
+            )""")
+        commands.append("""
+            CREATE TABLE IF NOT EXISTS player_games (
+                id SERIAL PRIMARY KEY,
+                player_index VARCHAR(20) REFERENCES players(index),
+                game INT REFERENCES games(id),
+                minutes REAL NOT NULL,
+                points INT NOT NULL,
+                rebounds INT NOT NULL,
+                assists INT NOT NULL,
+                ortg INT NOT NULL,
+                drtg INT NOT NULL
+            )""")
 
         for command in commands:
             cur.execute(command)
@@ -97,10 +115,4 @@ class DB(object):
 if __name__ == "__main__":
     db = DB()
     db.initialize_tables()
-    count = db.add_games([
-        ("BOS", "MIA", 104, 94, "2023-09-12"),
-        ("IND", "PHI", 104, 92, "2023-09-11"),
-    ])
-    print(count)
-    print(db.get_games())
     db.close()
