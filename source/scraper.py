@@ -4,6 +4,7 @@ import requests
 
 from db import DB
 
+base_url = "https://www.basketball-reference.com"
 
 class Scraper(object):
     @classmethod
@@ -26,22 +27,37 @@ class Scraper(object):
         return teams
 
     @classmethod
-    def scrape_games(cls, start_date, end_date):
-        url = "https://www.basketball-reference.com/boxscores/?month=%s&day=%s&year=%s"
+    def scrape_games(cls, start_date, end_date, db=None):
+        url = "https://www.basketball-reference.com/boxscores/?month={0}&day={1}&year={2}"
         cur_date = start_date
         while cur_date <= end_date:
             print(f"scraping for {cur_date}")
-            page = requests.get(url)
+            page = requests.get(url.format(cur_date.month, cur_date.day, cur_date.year))
             soup = BeautifulSoup(page.content, "html.parser")
-            games = soup.find_all("div", "game_summary")
+            games = soup.find_all("td", class_="gamelink")
+
+            game_objects = []
             for game in games:
-                print(game)
+                game_string = game.find("a")["href"]
+                game_objects.append(cls._scrape_game(game_string) + (cur_date,))
+            db.add_games(game_objects)
 
             cur_date += timedelta(days=1)
 
+    def _scrape_game(game_string):
+        url = base_url + game_string
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+        scorebox = soup.find("div", class_="scorebox")
+        away_index, home_index = [team.find("a")["href"].split("/")[2] for team in scorebox.find_all("strong")]
+        away_score, home_score = [int(team.text) for team in scorebox.find_all("div", class_="score")]
+        return (home_index, away_index, home_score, away_score)
+
+
+
 
 if __name__ == "__main__":
-    # db = DB()
+    db = DB()
     start_date = datetime.strptime('2023-04-21', '%Y-%m-%d').date()
     end_date = datetime.strptime('2023-04-21', '%Y-%m-%d').date()
-    Scraper.scrape_games(start_date, end_date)
+    Scraper.scrape_games(start_date, end_date, db)
