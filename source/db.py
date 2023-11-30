@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 import psycopg2, psycopg2.extras
 from datetime import datetime
@@ -56,6 +57,7 @@ class DB(object):
                 id SERIAL PRIMARY KEY,
                 player_index VARCHAR(20) REFERENCES players(index),
                 game INT REFERENCES games(id),
+                team_index VARCHAR(255) REFERENCES teams(index),
                 minutes REAL NOT NULL,
                 points INT NOT NULL,
                 rebounds INT NOT NULL,
@@ -80,14 +82,32 @@ class DB(object):
 
         return self._bulk_insert(sql, games)
 
+    def add_game(self, game):
+        sql = """INSERT INTO games(home_index, away_index, home_score, away_score, date)
+                 VALUES (%s,%s,%s,%s,%s) RETURNING id"""
+
+        id = None
+        try:
+            cur = self.conn.cursor()
+            cur.execute(sql, game)
+            id = cur.fetchone()[0]
+        except(Exception, psycopg2.DatabaseError) as error:
+            print(traceback.format_exc())
+        finally:
+            self.conn.commit()
+            cur.close()
+
+        return id
+
+
     def add_players(self, players):
         sql = """INSERT INTO players(index, name) VALUES %s"""
 
         return self._bulk_insert(sql, players)
 
     def add_player_games(self, player_games):
-        sql = """INSERT INTO player_games(player_index, game, minutes, points, rebounds,
-                 assists, ortg, drtg) VALUES %s"""
+        sql = """INSERT INTO player_games(player_index, game, team_index, minutes, points,
+                 rebounds, assists, ortg, drtg) VALUES %s"""
 
         return self._bulk_insert(sql, player_games)
 

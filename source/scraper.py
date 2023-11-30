@@ -34,37 +34,48 @@ class Scraper(object):
         cur_date = start_date
         while cur_date <= end_date:
             print(f"scraping for {cur_date}")
-            time.sleep(4)
+            # time.sleep(4)
             page = requests.get(url.format(cur_date.month, cur_date.day, cur_date.year))
             soup = BeautifulSoup(page.content, "html.parser")
             games = soup.find_all("td", class_="gamelink")
             print(f"{len(games)} games found")
 
-            game_objects = []
             for game in games:
+                # time.sleep(4)
                 game_string = game.find("a")["href"]
-                game_objects.append(cls._scrape_game(game_string) + (cur_date,))
-            db.add_games(game_objects)
+                cls._scrape_game(game_string, cur_date, db)
+
             print("--------------------------")
 
             cur_date += timedelta(days=1)
 
-    def _scrape_game(game_string):
-        time.sleep(4)
+    @classmethod
+    def _scrape_game(cls, game_string, date, db):
         print(f"scraping game for {game_string}")
-        url = base_url + game_string
-        page = requests.get(url)
+        page = requests.get(base_url + game_string)
         soup = BeautifulSoup(page.content, "html.parser")
+
         scorebox = soup.find("div", class_="scorebox")
         away_index, home_index = [team.find("a")["href"].split("/")[2] for team in scorebox.find_all("strong")]
         away_score, home_score = [int(team.text) for team in scorebox.find_all("div", class_="score")]
-        return (home_index, away_index, home_score, away_score)
+        game_id = db.add_game((home_index, away_index, home_score, away_score, date))
 
+        player_games = []
+        player_games.append(cls._scrape_player_stats(soup, game_id, home_index))
+        player_games.append(cls._scrape_player_stats(soup, game_id, away_index))
 
+    @classmethod
+    def _scrape_player_stats(cls, soup, game_id, team_index):
+        print(f"scraping {team_index} stats for game {game_id}")
+        home_basic_stats = soup.find(id=f"box-{team_index}-game-basic")
+        return
 
 
 if __name__ == "__main__":
     db = DB()
-    start_date = datetime.strptime('2022-11-26', '%Y-%m-%d').date()
-    end_date = datetime.strptime('2023-10-18', '%Y-%m-%d').date()
+    db.initialize_tables()
+    start_date = datetime.strptime('2023-10-24', '%Y-%m-%d').date()
+    end_date = datetime.strptime('2023-10-24', '%Y-%m-%d').date()
     Scraper.scrape_games(start_date, end_date, db)
+
+    db.close()
