@@ -1,6 +1,7 @@
 import logging
 
 import psycopg2, psycopg2.extras
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -71,30 +72,30 @@ class DB(object):
     def add_teams(self, teams):
         sql = """INSERT INTO teams(index, name) VALUES %s"""
 
-        count = 0
-        try:
-            cur = self.conn.cursor()
-            psycopg2.extras.execute_values(cur, sql, teams)
-        except(Exception, psycopg2.DatabaseError) as error:
-            print(error)
-        finally:
-            count = cur.rowcount
-            self.conn.commit()
-            cur.close()
+        return self._bulk_insert(sql, teams)
 
-        return count
-
-    def add_games(
-        self,
-        games
-    ):
+    def add_games(self, games):
         sql = """INSERT INTO games(home_index, away_index, home_score, away_score, date)
                  VALUES %s"""
 
+        return self._bulk_insert(sql, games)
+
+    def add_players(self, players):
+        sql = """INSERT INTO players(index, name) VALUES %s"""
+
+        return self._bulk_insert(sql, players)
+
+    def add_player_games(self, player_games):
+        sql = """INSERT INTO player_games(player_index, game, minutes, points, rebounds,
+                 assists, ortg, drtg) VALUES %s"""
+
+        return self._bulk_insert(sql, player_games)
+
+    def _bulk_insert(self, sql, objects):
         count = 0
         try:
             cur = self.conn.cursor()
-            psycopg2.extras.execute_values(cur, sql, games)
+            psycopg2.extras.execute_values(cur, sql, objects)
         except(Exception, psycopg2.DatabaseError) as error:
             print(error)
         finally:
@@ -115,4 +116,5 @@ class DB(object):
 if __name__ == "__main__":
     db = DB()
     db.initialize_tables()
+
     db.close()
