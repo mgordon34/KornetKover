@@ -34,14 +34,14 @@ class Scraper(object):
         cur_date = start_date
         while cur_date <= end_date:
             print(f"scraping for {cur_date}")
-            # time.sleep(4)
+            time.sleep(4)
             page = requests.get(url.format(cur_date.month, cur_date.day, cur_date.year))
             soup = BeautifulSoup(page.content, "html.parser")
             games = soup.find_all("td", class_="gamelink")
             print(f"{len(games)} games found")
 
             for game in games:
-                # time.sleep(4)
+                time.sleep(4)
                 game_string = game.find("a")["href"]
                 cls._scrape_game(game_string, cur_date, db)
 
