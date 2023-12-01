@@ -60,15 +60,41 @@ class Scraper(object):
         away_score, home_score = [int(team.text) for team in scorebox.find_all("div", class_="score")]
         game_id = db.add_game((home_index, away_index, home_score, away_score, date))
 
-        player_games = []
-        player_games.append(cls._scrape_player_stats(soup, game_id, home_index))
-        player_games.append(cls._scrape_player_stats(soup, game_id, away_index))
+
+        (home_players, home_stats) = cls._scrape_player_stats(soup, game_id, home_index)
+        (away_players, away_stats) = cls._scrape_player_stats(soup, game_id, away_index)
+
+        db.add_players(home_players + away_players)
+        db.add_player_games(home_stats + away_stats)
 
     @classmethod
     def _scrape_player_stats(cls, soup, game_id, team_index):
-        print(f"scraping {team_index} stats for game {game_id}")
-        home_basic_stats = soup.find(id=f"box-{team_index}-game-basic")
-        return
+        basic_stats = soup.find(id=f"box-{team_index}-game-basic").find("tbody").find_all("tr")
+        advanced_stats = soup.find(id=f"box-{team_index}-game-advanced").find("tbody").find_all("tr")
+
+        players = []
+        player_games = []
+        for i in range(0, len(basic_stats)):
+            if i == 5 or basic_stats[i].find("td", {"data-stat": "reason"}):
+                continue
+
+            index = (basic_stats[i].find("th")["data-append-csv"])
+            name = basic_stats[i].find("th").find("a").text
+            minutes = cls._convert_mp(basic_stats[i].find("td", {"data-stat": "mp"}).text)
+            rebounds = basic_stats[i].find("td", {"data-stat": "trb"}).text
+            assists = basic_stats[i].find("td", {"data-stat": "ast"}).text
+            points = basic_stats[i].find("td", {"data-stat": "pts"}).text
+            ortg = advanced_stats[i].find("td", {"data-stat": "off_rtg"}).text
+            drtg = advanced_stats[i].find("td", {"data-stat": "def_rtg"}).text
+
+            players.append((index, name))
+            player_games.append((index, game_id, team_index, minutes, points, rebounds, assists, ortg, drtg))
+
+        return (players, player_games)
+
+    def _convert_mp(mp_string):
+        (m, s) = mp_string.split(":")
+        return int(m) + round(int(s)/60, 2)
 
 
 if __name__ == "__main__":

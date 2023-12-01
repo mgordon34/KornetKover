@@ -101,7 +101,8 @@ class DB(object):
 
 
     def add_players(self, players):
-        sql = """INSERT INTO players(index, name) VALUES %s"""
+        sql = """INSERT INTO players(index, name) VALUES %s
+                 ON CONFLICT (index) DO NOTHING"""
 
         return self._bulk_insert(sql, players)
 
