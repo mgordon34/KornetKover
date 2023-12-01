@@ -44,7 +44,8 @@ class DB(object):
                 away_index VARCHAR(255) REFERENCES teams(index),
                 home_score INT NOT NULL,
                 away_score INT NOT NULL,
-                date DATE NOT NULL
+                date DATE NOT NULL,
+                CONSTRAINT uq_games UNIQUE(date, home_index)
             )""")
         commands.append("""
             CREATE TABLE IF NOT EXISTS players (
@@ -63,7 +64,8 @@ class DB(object):
                 rebounds INT NOT NULL,
                 assists INT NOT NULL,
                 ortg INT NOT NULL,
-                drtg INT NOT NULL
+                drtg INT NOT NULL,
+                CONSTRAINT uq_player_games UNIQUE(player_index, game)
             )""")
 
         for command in commands:
@@ -78,13 +80,16 @@ class DB(object):
 
     def add_games(self, games):
         sql = """INSERT INTO games(home_index, away_index, home_score, away_score, date)
+                 ON CONFLICT (date, home_index) DO NOTHING
                  VALUES %s"""
 
         return self._bulk_insert(sql, games)
 
     def add_game(self, game):
         sql = """INSERT INTO games(home_index, away_index, home_score, away_score, date)
-                 VALUES (%s,%s,%s,%s,%s) RETURNING id"""
+                 VALUES (%s,%s,%s,%s,%s)
+                 ON CONFLICT (date, home_index) DO UPDATE SET date=EXCLUDED.date
+                 RETURNING id"""
 
         id = None
         try:
@@ -101,14 +106,17 @@ class DB(object):
 
 
     def add_players(self, players):
-        sql = """INSERT INTO players(index, name) VALUES %s
+        sql = """INSERT INTO players(index, name)
+                 VALUES %s
                  ON CONFLICT (index) DO NOTHING"""
 
         return self._bulk_insert(sql, players)
 
     def add_player_games(self, player_games):
         sql = """INSERT INTO player_games(player_index, game, team_index, minutes, points,
-                 rebounds, assists, ortg, drtg) VALUES %s"""
+                 rebounds, assists, ortg, drtg)
+                 VALUES %s
+                 ON CONFLICT (player_index, game) DO NOTHING"""
 
         return self._bulk_insert(sql, player_games)
 
