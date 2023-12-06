@@ -85,6 +85,21 @@ class DB(object):
 
         return self._bulk_insert(sql, games)
 
+    def execute_query(self, query):
+        res = None
+
+        try:
+            cur = self.conn.cursor()
+            cur.execute(query)
+            res = cur.fetchone()
+        except(Exception, psycopg2.DatabaseError) as error:
+            print(traceback.format_exc())
+        finally:
+            self.conn.commit()
+            cur.close()
+
+        return res
+
     def add_game(self, game):
         sql = """INSERT INTO games(home_index, away_index, home_score, away_score, date)
                  VALUES (%s,%s,%s,%s,%s)

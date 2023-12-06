@@ -80,28 +80,33 @@ class Scraper(object):
 
             index = (basic_stats[i].find("th")["data-append-csv"])
             name = basic_stats[i].find("th").find("a").text
-            minutes = cls._convert_mp(basic_stats[i].find("td", {"data-stat": "mp"}).text)
-            rebounds = basic_stats[i].find("td", {"data-stat": "trb"}).text
-            assists = basic_stats[i].find("td", {"data-stat": "ast"}).text
-            points = basic_stats[i].find("td", {"data-stat": "pts"}).text
-            ortg = advanced_stats[i].find("td", {"data-stat": "off_rtg"}).text
-            drtg = advanced_stats[i].find("td", {"data-stat": "def_rtg"}).text
+            minutes = _convert_mp(basic_stats[i].find("td", {"data-stat": "mp"}).text)
+            rebounds = _normalize_stat(basic_stats[i].find("td", {"data-stat": "trb"}).text)
+            assists = _normalize_stat(basic_stats[i].find("td", {"data-stat": "ast"}).text)
+            points = _normalize_stat(basic_stats[i].find("td", {"data-stat": "pts"}).text)
+            ortg = _normalize_stat(advanced_stats[i].find("td", {"data-stat": "off_rtg"}).text)
+            drtg = _normalize_stat(advanced_stats[i].find("td", {"data-stat": "def_rtg"}).text)
 
             players.append((index, name))
             player_games.append((index, game_id, team_index, minutes, points, rebounds, assists, ortg, drtg))
 
         return (players, player_games)
 
-    def _convert_mp(mp_string):
-        (m, s) = mp_string.split(":")
-        return int(m) + round(int(s)/60, 2)
+def _convert_mp(mp_string):
+    (m, s) = mp_string.split(":")
+    return int(m) + round(int(s)/60, 2)
+
+def _normalize_stat(stat):
+    if not stat:
+        return 0
+    return stat
 
 
 if __name__ == "__main__":
     db = DB()
     db.initialize_tables()
-    start_date = datetime.strptime('2023-10-24', '%Y-%m-%d').date()
-    end_date = datetime.strptime('2023-10-24', '%Y-%m-%d').date()
+    start_date = datetime.strptime('2023-10-20', '%Y-%m-%d').date()
+    end_date = datetime.strptime('2023-12-03', '%Y-%m-%d').date()
     Scraper.scrape_games(start_date, end_date, db)
 
     db.close()
