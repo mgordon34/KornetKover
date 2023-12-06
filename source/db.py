@@ -67,6 +67,19 @@ class DB(object):
                 drtg INT NOT NULL,
                 CONSTRAINT uq_player_games UNIQUE(player_index, game)
             )""")
+        commands.append("""
+            CREATE TABLE IF NOT EXISTS pip_factors (
+                id SERIAL PRIMARY KEY,
+                player_index VARCHAR(20) REFERENCES players(index),
+                defender_index VARCHAR(20) REFERENCES players(index),
+                minutes REAL NOT NULL,
+                points REAL NOT NULL,
+                rebounds REAL NOT NULL,
+                assists REAL NOT NULL,
+                ortg REAL NOT NULL,
+                drtg REAL NOT NULL,
+                CONSTRAINT uq_pip_index UNIQUE(player_index, defender_index)
+            )""")
 
         for command in commands:
             cur.execute(command)
@@ -91,7 +104,7 @@ class DB(object):
         try:
             cur = self.conn.cursor()
             cur.execute(query)
-            res = cur.fetchone()
+            res = cur.fetchall()
         except(Exception, psycopg2.DatabaseError) as error:
             print(traceback.format_exc())
         finally:
@@ -134,6 +147,14 @@ class DB(object):
                  ON CONFLICT (player_index, game) DO NOTHING"""
 
         return self._bulk_insert(sql, player_games)
+
+    def add_pip_factors(self, pip_factors):
+        sql = """INSERT INTO pip_factors(player_index, defender_index, minutes, points,
+                 rebounds, assists, ortg, drtg)
+                 VALUES %s
+                 ON CONFLICT (player_index, defender_index) DO NOTHING"""
+
+        return self._bulk_insert(sql, pip_factors)
 
     def _bulk_insert(self, sql, objects):
         count = 0
