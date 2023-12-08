@@ -42,7 +42,7 @@ class PlayerStatService(object):
         start_date: str,
         end_date: str,
         frame: int,
-        ) -> PipFactor:
+    ) -> PipFactor:
         sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.assists), AVG(pg.rebounds), AVG(pg.ortg), AVG(pg.drtg)
                  FROM player_games pg
 	             LEFT JOIN games gg ON gg.id = pg.game
@@ -54,10 +54,35 @@ class PlayerStatService(object):
                  ) > 1;"""
 
         res = self.db.execute_query(sql.format(player_index, defender_index, start_date, end_date))[0]
+        if not res[0]:
+            return None
+
         player_stat = PlayerStat(frame, res[0], res[1], res[2], res[3], res[4], res[5], res[6])
         pip_factor = PipFactor(player_index, defender_index, player_stat)
 
         return pip_factor
+
+    def calc_all_players_pip_factor(
+        self,
+        min_floor: int,
+        start_date: str,
+        end_date: str,
+        frame: int,
+    ) -> None:
+        players = self.get_players(min_floor)
+
+        for player in players:
+            pip_factors = []
+            for defender in players:
+                if player == defender:
+                    continue
+
+                pip_factor = self.calc_pip_factor(player, defender, start_date, end_date, frame)
+                if pip_factor:
+                    pip_factors.append(pip_factor.to_db())
+
+            count = self.db.add_pip_factors(pip_factors)
+            print(f"{count} pip_factors added for player {player}")
 
 
 if __name__ == "__main__":
@@ -65,14 +90,12 @@ if __name__ == "__main__":
     db.initialize_tables()
     pss = PlayerStatService(db)
 
-    start_date = "2022-10-10"
-    end_date = "2023-04-10"
+    start_date = "2017-10-01"
+    end_date = "2023-12-03"
     player_index = "tatumja01"
-    frame = 1
-    pss.calc_player_avgs(player_index, start_date, end_date, frame)
+    frame = 5
+    # pss.calc_player_avgs(player_index, start_date, end_date, frame)
     players = pss.get_players(10)
-    pip_factors = pss.calc_pip_factor('tatumja01', 'barneha02', start_date, end_date, frame)
-    db.add_pip_factors([pip_factors.to_db()])
-    print(pip_factors)
+    pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
 
     db.close()
