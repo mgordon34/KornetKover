@@ -7,8 +7,11 @@ from source.stats.pip_factor import PipFactor
 
 
 class PlayerStatService(object):
-    def __init__(self, db: DB) -> None:
+    def __init__(self, db: DB, start_date="2017-10-01", end_date="2023-12-03") -> None:
         self.db = db
+        self.start_date = start_date
+        self.end_date = end_date
+        self.frame = int(end_date.split("-")[0]) - int(start_date.split("-")[0])
 
     def calc_player_avgs(
         self,
@@ -66,8 +69,10 @@ class PlayerStatService(object):
         sql = """SELECT frame, game_count, minutes, points, rebounds, assists, ortg, drtg from pip_factors
                  WHERE player_index='{0}' AND defender_index='{1}'"""
 
-        res = self.db.execute_query(sql.format(player_index, defender_index))[0]
-        ps = PlayerStat(*res)
+        res = self.db.execute_query(sql.format(player_index, defender_index))
+        if not res:
+            return None
+        ps = PlayerStat(*res[0])
         return PipFactor(player_index, defender_index, ps)
 
     def calc_all_players_pip_factor(
@@ -93,33 +98,54 @@ class PlayerStatService(object):
             print(f"{count} pip_factors added for player {player}")
 
     def calc_player_delta(self, player_avgs: PlayerStat, pip_factor: PipFactor) -> float:
-        points_delta = player_avgs.points - pip_factor.player_stat.points
-        points_pchange = points_delta / player_avgs.points
+        points_delta = pip_factor.player_stat.points - player_avgs.points 
+        points_pchange = round((points_delta / player_avgs.points) * 100, 2)
 
-        rebounds_delta = player_avgs.rebounds - pip_factor.player_stat.rebounds
-        rebounds_pchange = rebounds_delta / player_avgs.rebounds
+        rebounds_delta = pip_factor.player_stat.rebounds - player_avgs.rebounds
+        rebounds_pchange = round((rebounds_delta / player_avgs.rebounds) * 100, 2)
 
-        assists_delta = player_avgs.assists - pip_factor.player_stat.assists
-        assists_pchange = assists_delta / player_avgs.assists
+        assists_delta = pip_factor.player_stat.assists - player_avgs.assists
+        assists_pchange = round((assists_delta / player_avgs.assists) * 100, 2)
 
-        return(points_pchange, rebounds_pchange, assists_pchange)
+        return {
+            "points": points_pchange,
+            "rebounds": rebounds_pchange,
+            "assists": assists_pchange,
+        }
+
+    def analyze_player_matchups(self, team_one, team_two):
+        for player in team_one:
+            print(f"----------analyzing matchups for {player}----------")
+            player_stats = self.calc_player_avgs(player, "2022-10-10", self.end_date, self.frame)
+            for matchup in team_two:
+                if matchup == player:
+                    continue
+                pip = self.get_pip(player, matchup)
+                if not pip:
+                    continue
+                pchanges = self.calc_player_delta(player_stats, pip)
+                for key, value in pchanges.items():
+                    if value > 30 or value < -30:
+                        print(f"[{pip.player_stat.num_games}]{player} matchup with {matchup} leads to {value} change in {key}. {round(getattr(player_stats, key), 2)}->{round(getattr(pip.player_stat, key), 2)}")
+
+
 
 
 if __name__ == "__main__":
-    db = DB()
-    db.initialize_tables()
-    pss = PlayerStatService(db)
-
     start_date = "2017-10-01"
     end_date = "2023-12-03"
-    player_index = "tatumja01"
+    player_index = "gordoaa01"
+    defender_index = "bogdabo01"
     frame = 5
-    avg = pss.calc_player_avgs(player_index, start_date, end_date, frame)
-    #players = pss.get_players(10)
-    #pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
-    pip = pss.get_pip(player_index, 'brownja02')
-    print(avg.points)
-    print(pip.player_stat.points)
-    print(pss.calc_player_delta(avg, pip))
+
+    db = DB()
+    # db.initialize_tables()
+    pss = PlayerStatService(db, start_date, end_date)
+    pss.get_pip('murraja01', 'beysa01')
+
+    team_one = ['jokicni01', 'murraja01', 'gordoaa01', 'portemi01']
+    team_two = ['murrade01', 'capelca01', 'huntede01', 'youngtr01', 'beysa01', 'johnsja05']
+    pss.analyze_player_matchups(team_one, team_two)
+    pss.analyze_player_matchups(team_two, team_one)
 
     db.close()
