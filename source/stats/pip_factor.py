@@ -15,6 +15,8 @@ class PipFactor(object):
         return (
             self.player_index,
             self.defender_index,
+            self.player_stat.frame,
+            self.player_stat.num_games,
             self.player_stat.minutes,
             self.player_stat.points,
             self.player_stat.rebounds,

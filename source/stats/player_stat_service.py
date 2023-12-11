@@ -62,6 +62,14 @@ class PlayerStatService(object):
 
         return pip_factor
 
+    def get_pip(self, player_index, defender_index):
+        sql = """SELECT frame, game_count, minutes, points, rebounds, assists, ortg, drtg from pip_factors
+                 WHERE player_index='{0}' AND defender_index='{1}'"""
+
+        res = self.db.execute_query(sql.format(player_index, defender_index))[0]
+        ps = PlayerStat(*res)
+        return PipFactor(player_index, defender_index, ps)
+
     def calc_all_players_pip_factor(
         self,
         min_floor: int,
@@ -84,6 +92,18 @@ class PlayerStatService(object):
             count = self.db.add_pip_factors(pip_factors)
             print(f"{count} pip_factors added for player {player}")
 
+    def calc_player_delta(self, player_avgs: PlayerStat, pip_factor: PipFactor) -> float:
+        points_delta = player_avgs.points - pip_factor.player_stat.points
+        points_pchange = points_delta / player_avgs.points
+
+        rebounds_delta = player_avgs.rebounds - pip_factor.player_stat.rebounds
+        rebounds_pchange = rebounds_delta / player_avgs.rebounds
+
+        assists_delta = player_avgs.assists - pip_factor.player_stat.assists
+        assists_pchange = assists_delta / player_avgs.assists
+
+        return(points_pchange, rebounds_pchange, assists_pchange)
+
 
 if __name__ == "__main__":
     db = DB()
@@ -94,8 +114,12 @@ if __name__ == "__main__":
     end_date = "2023-12-03"
     player_index = "tatumja01"
     frame = 5
-    # pss.calc_player_avgs(player_index, start_date, end_date, frame)
-    players = pss.get_players(10)
-    pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
+    avg = pss.calc_player_avgs(player_index, start_date, end_date, frame)
+    #players = pss.get_players(10)
+    #pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
+    pip = pss.get_pip(player_index, 'brownja02')
+    print(avg.points)
+    print(pip.player_stat.points)
+    print(pss.calc_player_delta(avg, pip))
 
     db.close()

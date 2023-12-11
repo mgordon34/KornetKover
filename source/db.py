@@ -72,6 +72,8 @@ class DB(object):
                 id SERIAL PRIMARY KEY,
                 player_index VARCHAR(20) REFERENCES players(index),
                 defender_index VARCHAR(20) REFERENCES players(index),
+                frame INT NOT NULL,
+                game_count INT NOT NULL,
                 minutes REAL NOT NULL,
                 points REAL NOT NULL,
                 rebounds REAL NOT NULL,
@@ -149,8 +151,8 @@ class DB(object):
         return self._bulk_insert(sql, player_games)
 
     def add_pip_factors(self, pip_factors):
-        sql = """INSERT INTO pip_factors(player_index, defender_index, minutes, points,
-                 rebounds, assists, ortg, drtg)
+        sql = """INSERT INTO pip_factors(player_index, defender_index, frame, game_count,
+                 minutes, points, rebounds, assists, ortg, drtg)
                  VALUES %s
                  ON CONFLICT (player_index, defender_index) DO NOTHING"""
 
