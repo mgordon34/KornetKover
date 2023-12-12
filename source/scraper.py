@@ -92,6 +92,61 @@ class Scraper(object):
 
         return (players, player_games)
 
+    @classmethod
+    def scrape_upcoming_games(cls, date=None):
+        url = "https://www.basketball-reference.com/leagues/NBA_2024_games-{}.html"
+        if not date:
+            date = datetime.now().date()
+
+        page = requests.get(url.format(date.strftime("%B").lower()))
+        soup = BeautifulSoup(page.content, "html.parser")
+        game_soup = soup.find(id="schedule").find("tbody").find_all("tr")
+
+        games = []
+        for game in game_soup:
+            date_string = game.find("th").get("csk")
+            game_date = datetime.strptime(date_string[:-4], "%Y%m%d").date()
+            if game_date != date:
+                continue
+
+            games.append([team["href"].split("/")[2] for team in game.find_all("a")[1:]])
+
+        return games
+
+    @classmethod
+    def _scrape_starting_five(cls, team, missing_players=[]):
+        time.sleep(4)
+        url = "https://www.basketball-reference.com/teams/{}/2024.html"
+        page = requests.get(url.format(team))
+        soup = BeautifulSoup(page.content, "html.parser")
+        player_soup = soup.find(id="per_game").find("tbody").find_all("tr")
+
+        players = []
+        i = 0
+        while len(players) < 5:
+            index = player_soup[i].find("a")["href"].split("/")[3].split(".")[0]
+            if index not in missing_players:
+                players.append(index)
+            i += 1
+
+        return players
+
+    @classmethod
+    def get_rosters_for_upcoming_games(cls):
+        game_list = cls.scrape_upcoming_games()
+
+        games = {}
+        for game in game_list:
+            away_players = cls._scrape_starting_five(game[0])
+            home_players = cls._scrape_starting_five(game[1])
+
+            games[game[0] + game[1]] = {
+                "away": away_players,
+                "home": home_players,
+            }
+
+        return games
+
 def _convert_mp(mp_string):
     (m, s) = mp_string.split(":")
     return int(m) + round(int(s)/60, 2)
@@ -104,9 +159,16 @@ def _normalize_stat(stat):
 
 if __name__ == "__main__":
     db = DB()
-    db.initialize_tables()
-    start_date = datetime.strptime('2023-10-20', '%Y-%m-%d').date()
-    end_date = datetime.strptime('2023-12-03', '%Y-%m-%d').date()
-    Scraper.scrape_games(start_date, end_date, db)
+
+    # db.initialize_tables()
+    # start_date = datetime.strptime('2023-10-20', '%Y-%m-%d').date()
+    # end_date = datetime.strptime('2023-12-03', '%Y-%m-%d').date()
+    # Scraper.scrape_games(start_date, end_date, db)
+
+    games = Scraper.get_rosters_for_upcoming_games()
+    for game, roster in games.items():
+        print(f"---------{game}---------")
+        print(roster["away"])
+        print(roster["home"])
 
     db.close()

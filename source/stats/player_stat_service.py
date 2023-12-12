@@ -125,7 +125,7 @@ class PlayerStatService(object):
                     continue
                 pchanges = self.calc_player_delta(player_stats, pip)
                 for key, value in pchanges.items():
-                    if value > 30 or value < -30:
+                    if value > 25 or value < -25:
                         print(f"[{pip.player_stat.num_games}]{player} matchup with {matchup} leads to {value} change in {key}. {round(getattr(player_stats, key), 2)}->{round(getattr(pip.player_stat, key), 2)}")
 
 
