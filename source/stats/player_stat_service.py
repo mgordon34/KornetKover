@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from source.db import DB
+from source.tools.db import DB
 from source.stats.player_stat import PlayerStat
 from source.stats.pip_factor import PipFactor
 

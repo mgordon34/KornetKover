@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import requests
 
-from db import DB
+from source.tools.db import DB
 
 base_url = "https://www.basketball-reference.com"
 

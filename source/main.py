@@ -1,5 +1,5 @@
-from source.db import DB
-from source.scraper import Scraper
+from source.tools.db import DB
+from source.tools.scraper import Scraper
 from source.stats.player_stat_service import PlayerStatService
 
 db = DB()
