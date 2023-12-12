@@ -1,3 +1,4 @@
+from collections import defaultdict
 import time
 
 from bs4 import BeautifulSoup
@@ -127,18 +128,41 @@ class Scraper(object):
             index = player_soup[i].find("a")["href"].split("/")[3].split(".")[0]
             if index not in missing_players:
                 players.append(index)
+            else:
+                print(f"{index} is OUT, skipping...")
             i += 1
 
         return players
 
     @classmethod
+    def _get_missing_players(cls):
+        url = "https://www.basketball-reference.com/friv/injuries.fcgi"
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        missing_players = defaultdict(lambda: {"out":[],"dtd":[]})
+        players = soup.find(id="injuries").find("tbody").find_all("tr")
+        for player in players:
+            index = player.find("th")["data-append-csv"]
+            data = player.find_all("td")
+            team = data[0].find("a")["href"].split("/")[2]
+            status = data[2].text
+            if status.startswith("Out"):
+                missing_players[team]["out"].append(index)
+            elif status.startswith("Day To Day"):
+                missing_players[team]["dtd"].append(index)
+
+        return missing_players
+
+    @classmethod
     def get_rosters_for_upcoming_games(cls):
         game_list = cls.scrape_upcoming_games()
+        missing_players = cls._get_missing_players()
 
         games = {}
         for game in game_list:
-            away_players = cls._scrape_starting_five(game[0])
-            home_players = cls._scrape_starting_five(game[1])
+            away_players = cls._scrape_starting_five(game[0], missing_players[game[0]]["out"])
+            home_players = cls._scrape_starting_five(game[1], missing_players[game[1]]["out"])
 
             games[game[0] + game[1]] = {
                 "away": away_players,
@@ -165,10 +189,10 @@ if __name__ == "__main__":
     # end_date = datetime.strptime('2023-12-03', '%Y-%m-%d').date()
     # Scraper.scrape_games(start_date, end_date, db)
 
-    games = Scraper.get_rosters_for_upcoming_games()
-    for game, roster in games.items():
-        print(f"---------{game}---------")
-        print(roster["away"])
-        print(roster["home"])
+    players = Scraper._get_missing_players()
+    for team, report in players.items():
+        print(f"-----{team}-----")
+        print(f"OUT: {report['out']}")
+        print(f"DTD: {report['dtd']}")
 
     db.close()
