@@ -37,10 +37,11 @@ class MatchupAnalysisService(object):
         }
 
     def analyze_player_matchups(self, team_one, team_two):
-        for player in team_one:
+        for player in team_one["starting"]:
             print(f"----------analyzing matchups for {player}----------")
             player_stats = self.pss.calc_player_avgs(player, "2022-10-10", self.end_date, self.frame)
-            for matchup in team_two:
+            # TODO: update player_stats with missing teammates
+            for matchup in team_two["starting"]:
                 if matchup == player:
                     continue
                 pip = self.pss.get_pip(player, matchup)

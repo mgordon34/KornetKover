@@ -165,8 +165,8 @@ class Scraper(object):
             home_players = cls._scrape_starting_five(game[1], missing_players[game[1]]["out"])
 
             games[game[0] + game[1]] = {
-                "away": away_players,
-                "home": home_players,
+                "away": {"starting": away_players, **missing_players[game[0]]},
+                "home": {"starting": home_players, **missing_players[game[1]]},
             }
 
         return games
