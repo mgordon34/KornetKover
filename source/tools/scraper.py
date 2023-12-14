@@ -115,24 +115,33 @@ class Scraper(object):
         return games
 
     @classmethod
-    def _scrape_starting_five(cls, team, missing_players=[]):
+    def _scrape_playing_players(cls, team, missing_players=[]):
         time.sleep(4)
         url = "https://www.basketball-reference.com/teams/{}/2024.html"
         page = requests.get(url.format(team))
         soup = BeautifulSoup(page.content, "html.parser")
         player_soup = soup.find(id="per_game").find("tbody").find_all("tr")
 
-        players = []
+        players = {"starting": [], "bench": []}
         i = 0
-        while len(players) < 5:
-            index = player_soup[i].find("a")["href"].split("/")[3].split(".")[0]
+        for player in player_soup:
+            index = player.find("a")["href"].split("/")[3].split(".")[0]
+            avg_min = cls._get_avg_minutes_from_player_tr(player)
             if index not in missing_players:
-                players.append(index)
+                if avg_min > 20 and len(players["starting"]) <= 8:
+                    players["starting"].append(index)
+                elif avg_min > 10:
+                    players["bench"].append(index)
             else:
                 print(f"{index} is OUT, skipping...")
-            i += 1
 
         return players
+
+    @classmethod
+    def _get_avg_minutes_from_player_tr(cls, player_tr):
+        for column in player_tr.find_all("td"):
+            if column.has_attr("data-stat") and column["data-stat"] == "mp_per_g":
+                return float(column.text)
 
     @classmethod
     def _get_missing_players(cls):
@@ -161,12 +170,12 @@ class Scraper(object):
 
         games = {}
         for game in game_list:
-            away_players = cls._scrape_starting_five(game[0], missing_players[game[0]]["out"])
-            home_players = cls._scrape_starting_five(game[1], missing_players[game[1]]["out"])
+            away_players = cls._scrape_playing_players(game[0], missing_players[game[0]]["out"])
+            home_players = cls._scrape_playing_players(game[1], missing_players[game[1]]["out"])
 
             games[game[0] + game[1]] = {
-                "away": {"starting": away_players, **missing_players[game[0]]},
-                "home": {"starting": home_players, **missing_players[game[1]]},
+                "away": {**away_players, **missing_players[game[0]]},
+                "home": {**home_players, **missing_players[game[1]]},
             }
 
         return games
@@ -189,10 +198,10 @@ if __name__ == "__main__":
     # end_date = datetime.strptime('2023-12-03', '%Y-%m-%d').date()
     # Scraper.scrape_games(start_date, end_date, db)
 
-    players = Scraper._get_missing_players()
-    for team, report in players.items():
-        print(f"-----{team}-----")
-        print(f"OUT: {report['out']}")
-        print(f"DTD: {report['dtd']}")
+    rosters = Scraper.get_rosters_for_upcoming_games()
+    for game, roster in rosters.items():
+        print(f"------{game}------")
+        for team in roster:
+            print(roster[team])
 
     db.close()
