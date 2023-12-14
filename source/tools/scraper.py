@@ -128,7 +128,7 @@ class Scraper(object):
             index = player.find("a")["href"].split("/")[3].split(".")[0]
             avg_min = cls._get_avg_minutes_from_player_tr(player)
             if index not in missing_players:
-                if avg_min > 20 and len(players["starting"]) <= 8:
+                if avg_min > 20 and len(players["starting"]) <= 5:
                     players["starting"].append(index)
                 elif avg_min > 10:
                     players["bench"].append(index)

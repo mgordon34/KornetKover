@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from source.stats.pip_factor import PipFactor
+from source.stats.player_per import PlayerPer
 from source.stats.player_stat import PlayerStat
 from source.stats.player_stat_service import PlayerStatService
 from source.tools.db import DB
@@ -20,17 +21,17 @@ class MatchupAnalysisService(object):
 
         self.pss = PlayerStatService(db)
 
-    def calc_player_delta(self, player_avgs: PlayerStat, pip_factor: PipFactor) -> float:
-        points_delta = pip_factor.player_stat.points - player_avgs.points 
+    def calc_player_delta(self, player_avgs: PlayerPer, pip_factor: PipFactor) -> float:
+        points_delta = pip_factor.player_per.points - player_avgs.points
         points_pchange = round((points_delta / player_avgs.points) * 100, 2)
 
-        rebounds_delta = pip_factor.player_stat.rebounds - player_avgs.rebounds
+        rebounds_delta = pip_factor.player_per.rebounds - player_avgs.rebounds
         rebounds_pchange = round((rebounds_delta / player_avgs.rebounds) * 100, 2)
 
-        assists_delta = pip_factor.player_stat.assists - player_avgs.assists
+        assists_delta = pip_factor.player_per.assists - player_avgs.assists
         assists_pchange = round((assists_delta / player_avgs.assists) * 100, 2)
 
-        minutes_delta = pip_factor.player_stat.minutes - player_avgs.minutes
+        minutes_delta = pip_factor.player_per.minutes - player_avgs.minutes
         minutes_pchange = round((minutes_delta / player_avgs.minutes) * 100, 2)
 
         return {
@@ -42,8 +43,14 @@ class MatchupAnalysisService(object):
 
     def analyze_player_matchups(self, team_one, team_two, p_threshold=25):
         for player in team_one["starting"]:
-            print(f"----------analyzing matchups for {player}----------")
             player_stats = self.pss.calc_player_avgs(player, "2022-10-10", self.end_date, self.frame)
+            print("----------analyzing matchups for {}: MIN[{}], PTS[{}], REB[{}], AST[{}]----------".format(
+                player,
+                round(player_stats.minutes, 2),
+                round(player_stats.points * player_stats.minutes, 2),
+                round(player_stats.rebounds * player_stats.minutes, 2),
+                round(player_stats.assists * player_stats.minutes, 2),
+            ))
             for teammate in team_one["out"]:
                 pip = self.pss.calc_missing_teammate_pip_factor(player, teammate)
                 if not pip:
@@ -51,7 +58,11 @@ class MatchupAnalysisService(object):
                 pchanges = self.calc_player_delta(player_stats, pip)
                 for key, value in pchanges.items():
                     if value > p_threshold or value < -p_threshold:
-                        print(f"[{pip.player_stat.num_games}]{player} with {teammate} missing leads to {value} change in {key}. {round(getattr(player_stats, key), 2)}->{round(getattr(pip.player_stat, key), 2)}")
+                        predicted_stat = getattr(pip.player_per, key)
+                        if key != "minutes":
+                            predicted_stat = predicted_stat * pip.player_per.minutes
+                        predicted_stat = round(predicted_stat, 2)
+                        print(f"[{pip.player_per.num_games}]{player} with {teammate} missing leads to {value} change in {key}. {predicted_stat} on {round(pip.player_per.minutes,2)} minutes")
             for matchup in team_two["starting"]:
                 pip = self.pss.get_pip(player, matchup)
                 if not pip:
@@ -59,4 +70,8 @@ class MatchupAnalysisService(object):
                 pchanges = self.calc_player_delta(player_stats, pip)
                 for key, value in pchanges.items():
                     if value > p_threshold or value < -p_threshold:
-                        print(f"[{pip.player_stat.num_games}]{player} matchup with {matchup} leads to {value} change in {key}. {round(getattr(player_stats, key), 2)}->{round(getattr(pip.player_stat, key), 2)}")
+                        predicted_stat = getattr(pip.player_per, key)
+                        if key != "minutes":
+                            predicted_stat = predicted_stat * pip.player_per.minutes
+                        predicted_stat = round(predicted_stat, 2)
+                        print(f"[{pip.player_per.num_games}]{player} matchup with {matchup} leads to {value} change in {key}. {predicted_stat} on {round(pip.player_per.minutes,2)} minutes")

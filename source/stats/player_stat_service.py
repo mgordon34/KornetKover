@@ -112,7 +112,7 @@ class PlayerStatService(object):
             return None
 
         player_per = self.create_player_per(frame, *res)
-        pip_factor = PipFactor(player_index, defender_index, player_per)
+        pip_factor = PipFactor(player_index, teammate_index, player_per)
 
         return pip_factor
 
@@ -123,7 +123,7 @@ class PlayerStatService(object):
         res = self.db.execute_query(sql.format(player_index, defender_index))
         if not res:
             return None
-        player_per = self.create_player_per(*res[0])
+        player_per = PlayerPer(*res[0])
         return PipFactor(player_index, defender_index, player_per)
 
     def calc_all_players_pip_factor(
