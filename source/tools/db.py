@@ -78,8 +78,6 @@ class DB(object):
                 points REAL NOT NULL,
                 rebounds REAL NOT NULL,
                 assists REAL NOT NULL,
-                ortg REAL NOT NULL,
-                drtg REAL NOT NULL,
                 CONSTRAINT uq_pip_index UNIQUE(player_index, defender_index)
             )""")
 
@@ -152,7 +150,7 @@ class DB(object):
 
     def add_pip_factors(self, pip_factors):
         sql = """INSERT INTO pip_factors(player_index, defender_index, frame, game_count,
-                 minutes, points, rebounds, assists, ortg, drtg)
+                 minutes, points, rebounds, assists)
                  VALUES %s
                  ON CONFLICT (player_index, defender_index) DO NOTHING"""
 

@@ -1,26 +1,24 @@
-from source.stats.player_stat import PlayerStat
+from source.stats.player_per import PlayerPer
 
 class PipFactor(object):
     def __init__(
         self,
         player_index: str,
         defender_index: str,
-        player_stat: PlayerStat,
+        player_per: PlayerPer,
     ) -> None:
         self.player_index = player_index
         self.defender_index = defender_index
-        self.player_stat = player_stat
+        self.player_per = player_per
 
     def to_db(self) -> tuple:
         return (
             self.player_index,
             self.defender_index,
-            self.player_stat.frame,
-            self.player_stat.num_games,
-            self.player_stat.minutes,
-            self.player_stat.points,
-            self.player_stat.rebounds,
-            self.player_stat.assists,
-            self.player_stat.ortg,
-            self.player_stat.drtg,
+            self.player_per.frame,
+            self.player_per.num_games,
+            self.player_per.minutes,
+            self.player_per.points,
+            self.player_per.rebounds,
+            self.player_per.assists,
         )

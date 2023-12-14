@@ -1,8 +1,10 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import List
 
 from source.tools.db import DB
 from source.stats.player_stat import PlayerStat
+from source.stats.player_per import PlayerPer
 from source.stats.pip_factor import PipFactor
 
 
@@ -20,15 +22,15 @@ class PlayerStatService(object):
         end_date: str,
         frame: int,
     ) -> PlayerStat:
-        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.assists), AVG(pg.rebounds), AVG(pg.ortg), AVG(pg.drtg) 
+        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.rebounds), AVG(pg.assists)
                  FROM player_games pg
                  LEFT join games gg ON gg.id=pg.game
                  WHERE pg.player_index='{0}' AND gg.date>'{1}' AND gg.date<'{2}'"""
         
         res = self.db.execute_query(sql.format(player_index, start_date, end_date))[0]
-        stats = PlayerStat(frame, res[0], float(res[1]), float(res[2]), float(res[3]), float(res[4]), float(res[5]), float(res[6]))
+        player_per = self.create_player_per(frame, *res)
 
-        return stats
+        return player_per
 
     def get_players(self, mins_floor: int) -> List[str]:
         sql = """SELECT pp.index FROM players pp
@@ -46,7 +48,7 @@ class PlayerStatService(object):
         end_date: str,
         frame: int,
     ) -> PipFactor:
-        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.assists), AVG(pg.rebounds), AVG(pg.ortg), AVG(pg.drtg)
+        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.rebounds), AVG(pg.assists)
                  FROM player_games pg
 	             LEFT JOIN games gg ON gg.id = pg.game
 	             WHERE pg.player_index='{0}' AND gg.date>'{2}' AND gg.date<'{3}'
@@ -57,13 +59,30 @@ class PlayerStatService(object):
                  ) > 1;"""
 
         res = self.db.execute_query(sql.format(player_index, defender_index, start_date, end_date))[0]
-        if not res[0]:
+        if not res[0] or res[1] == 0:
             return None
 
-        player_stat = PlayerStat(frame, res[0], res[1], res[2], res[3], res[4], res[5], res[6])
-        pip_factor = PipFactor(player_index, defender_index, player_stat)
+        player_per = self.create_player_per(frame, *res)
+        pip_factor = PipFactor(player_index, defender_index, player_per)
 
         return pip_factor
+
+    def create_player_per(
+        self,
+        frame: int,
+        num_games: int,
+        avg_minutes: Decimal,
+        avg_points: Decimal,
+        avg_rebounds: Decimal,
+        avg_assists: Decimal,
+    ) -> PlayerPer:
+        avg_minutes = float(avg_minutes)
+        points_per = float(avg_points) / avg_minutes
+        rebounds_per = float(avg_rebounds) / avg_minutes
+        assists_per = float(avg_assists) / avg_minutes
+
+        return PlayerPer(frame, num_games, avg_minutes, points_per, rebounds_per, assists_per)
+
 
     def calc_missing_teammate_pip_factor(
         self,
@@ -73,7 +92,7 @@ class PlayerStatService(object):
         start_date = "2023-10-10"
         end_date = datetime.now().strftime("%Y-%m-%d")
         frame = 0
-        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.assists), AVG(pg.rebounds), AVG(pg.ortg), AVG(pg.drtg)
+        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.rebounds), AVG(pg.assists)
                  FROM player_games pg
 	             LEFT JOIN games gg ON gg.id = pg.game
 	             WHERE pg.player_index='{0}' AND gg.date>'{2}' AND gg.date<'{3}'
@@ -92,20 +111,20 @@ class PlayerStatService(object):
         if not res[0]:
             return None
 
-        player_stat = PlayerStat(frame, res[0], float(res[1]), float(res[2]), float(res[3]), float(res[4]), float(res[5]), float(res[6]))
-        pip_factor = PipFactor(player_index, teammate_index, player_stat)
+        player_per = self.create_player_per(frame, *res)
+        pip_factor = PipFactor(player_index, defender_index, player_per)
 
         return pip_factor
 
     def get_pip(self, player_index, defender_index):
-        sql = """SELECT frame, game_count, minutes, points, rebounds, assists, ortg, drtg from pip_factors
+        sql = """SELECT frame, game_count, minutes, points, rebounds, assists from pip_factors
                  WHERE player_index='{0}' AND defender_index='{1}'"""
 
         res = self.db.execute_query(sql.format(player_index, defender_index))
         if not res:
             return None
-        ps = PlayerStat(*res[0])
-        return PipFactor(player_index, defender_index, ps)
+        player_per = self.create_player_per(*res[0])
+        return PipFactor(player_index, defender_index, player_per)
 
     def calc_all_players_pip_factor(
         self,
@@ -138,8 +157,9 @@ if __name__ == "__main__":
     frame = 5
 
     db = DB()
-    # db.initialize_tables()
+    db.initialize_tables()
+
     pss = PlayerStatService(db, start_date, end_date)
-    pss.get_pip('murraja01', 'beysa01')
+    pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
 
     db.close()

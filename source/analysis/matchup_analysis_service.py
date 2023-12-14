@@ -30,13 +30,17 @@ class MatchupAnalysisService(object):
         assists_delta = pip_factor.player_stat.assists - player_avgs.assists
         assists_pchange = round((assists_delta / player_avgs.assists) * 100, 2)
 
+        minutes_delta = pip_factor.player_stat.minutes - player_avgs.minutes
+        minutes_pchange = round((minutes_delta / player_avgs.minutes) * 100, 2)
+
         return {
             "points": points_pchange,
             "rebounds": rebounds_pchange,
             "assists": assists_pchange,
+            "minutes": minutes_pchange,
         }
 
-    def analyze_player_matchups(self, team_one, team_two):
+    def analyze_player_matchups(self, team_one, team_two, p_threshold=25):
         for player in team_one["starting"]:
             print(f"----------analyzing matchups for {player}----------")
             player_stats = self.pss.calc_player_avgs(player, "2022-10-10", self.end_date, self.frame)
@@ -45,10 +49,8 @@ class MatchupAnalysisService(object):
                 if not pip:
                     continue
                 pchanges = self.calc_player_delta(player_stats, pip)
-                minutes_delta = pip.player_stat.minutes - player_stats.minutes
-                pchanges["minutes"] = round((minutes_delta / player_stats.minutes) * 100, 2)
                 for key, value in pchanges.items():
-                    if value > 25 or value < -25:
+                    if value > p_threshold or value < -p_threshold:
                         print(f"[{pip.player_stat.num_games}]{player} with {teammate} missing leads to {value} change in {key}. {round(getattr(player_stats, key), 2)}->{round(getattr(pip.player_stat, key), 2)}")
             for matchup in team_two["starting"]:
                 pip = self.pss.get_pip(player, matchup)
@@ -56,5 +58,5 @@ class MatchupAnalysisService(object):
                     continue
                 pchanges = self.calc_player_delta(player_stats, pip)
                 for key, value in pchanges.items():
-                    if value > 25 or value < -25:
+                    if value > p_threshold or value < -p_threshold:
                         print(f"[{pip.player_stat.num_games}]{player} matchup with {matchup} leads to {value} change in {key}. {round(getattr(player_stats, key), 2)}->{round(getattr(pip.player_stat, key), 2)}")
