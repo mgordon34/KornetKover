@@ -40,10 +40,17 @@ class MatchupAnalysisService(object):
         for player in team_one["starting"]:
             print(f"----------analyzing matchups for {player}----------")
             player_stats = self.pss.calc_player_avgs(player, "2022-10-10", self.end_date, self.frame)
-            # TODO: update player_stats with missing teammates
-            for matchup in team_two["starting"]:
-                if matchup == player:
+            for teammate in team_one["out"]:
+                pip = self.pss.calc_missing_teammate_pip_factor(player, teammate)
+                if not pip:
                     continue
+                pchanges = self.calc_player_delta(player_stats, pip)
+                minutes_delta = pip.player_stat.minutes - player_stats.minutes
+                pchanges["minutes"] = round((minutes_delta / player_stats.minutes) * 100, 2)
+                for key, value in pchanges.items():
+                    if value > 25 or value < -25:
+                        print(f"[{pip.player_stat.num_games}]{player} with {teammate} missing leads to {value} change in {key}. {round(getattr(player_stats, key), 2)}->{round(getattr(pip.player_stat, key), 2)}")
+            for matchup in team_two["starting"]:
                 pip = self.pss.get_pip(player, matchup)
                 if not pip:
                     continue

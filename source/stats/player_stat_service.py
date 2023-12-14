@@ -65,6 +65,38 @@ class PlayerStatService(object):
 
         return pip_factor
 
+    def calc_missing_teammate_pip_factor(
+        self,
+        player_index: str,
+        teammate_index: str,
+    ) -> PipFactor:
+        start_date = "2023-10-10"
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        frame = 0
+        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.assists), AVG(pg.rebounds), AVG(pg.ortg), AVG(pg.drtg)
+                 FROM player_games pg
+	             LEFT JOIN games gg ON gg.id = pg.game
+	             WHERE pg.player_index='{0}' AND gg.date>'{2}' AND gg.date<'{3}'
+                 AND (
+                     SELECT COUNT(*) FROM games ga
+                     LEFT JOIN player_games pg ON pg.game=ga.id
+                     WHERE ga.id=gg.id AND pg.player_index='{0}'
+                 ) = 1
+                 AND (
+                     SELECT COUNT(*) FROM games ga
+                     LEFT JOIN player_games pg ON pg.game=ga.id
+                     WHERE ga.id=gg.id AND pg.player_index='{1}'
+                 ) = 0;"""
+
+        res = self.db.execute_query(sql.format(player_index, teammate_index, start_date, end_date))[0]
+        if not res[0]:
+            return None
+
+        player_stat = PlayerStat(frame, res[0], float(res[1]), float(res[2]), float(res[3]), float(res[4]), float(res[5]), float(res[6]))
+        pip_factor = PipFactor(player_index, teammate_index, player_stat)
+
+        return pip_factor
+
     def get_pip(self, player_index, defender_index):
         sql = """SELECT frame, game_count, minutes, points, rebounds, assists, ortg, drtg from pip_factors
                  WHERE player_index='{0}' AND defender_index='{1}'"""
