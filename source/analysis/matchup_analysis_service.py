@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from source.analysis.player_analysis import PlayerAnalysis
 from source.stats.pip_factor import PipFactor
 from source.stats.player_per import PlayerPer
 from source.stats.player_stat import PlayerStat
@@ -41,8 +42,9 @@ class MatchupAnalysisService(object):
             "minutes": minutes_pchange,
         }
 
-    def analyze_player_matchups(self, team_one, team_two, p_threshold=25):
+    def analyze_player_matchups(self, team_one, team_two, p_threshold=25, date=datetime.now().date()):
         for player in team_one["starting"]:
+            player_analysis = PlayerAnalysis(player, date)
             player_stats = self.pss.calc_player_avgs(player, "2022-10-10", self.end_date, self.frame)
             print("----------analyzing matchups for {}: MIN[{}], PTS[{}], REB[{}], AST[{}]----------".format(
                 player,
