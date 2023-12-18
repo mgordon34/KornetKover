@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from typing import List
 
@@ -27,10 +28,33 @@ class PlayerStatService(object):
                  LEFT join games gg ON gg.id=pg.game
                  WHERE pg.player_index='{0}' AND gg.date>'{1}' AND gg.date<'{2}'"""
         
+        print(f"cur_date: {start_date}")
+        print(f"end_date: {end_date}")
         res = self.db.execute_query(sql.format(player_index, start_date, end_date))[0]
+        print(res)
         player_per = self.create_player_per(frame, *res)
 
         return player_per
+
+    def calc_player_avgs_by_year(
+        self,
+        player_index: str,
+        start_date: str,
+        end_date: str,
+    ) -> dict:
+        cur_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        player_avgs = {}
+
+
+        while cur_date < end_date:
+            cur_year = str(cur_date.year)
+            next_date = cur_date + relativedelta(years=1)
+
+            player_avgs[cur_year] = self.calc_player_avgs(player_index, cur_date.strftime("%Y-%m-%d"), next_date.strftime("%Y-%m-%d"), 1)
+            cur_date = next_date
+
+        return player_avgs
 
     def get_players(self, mins_floor: int) -> List[str]:
         sql = """SELECT pp.index FROM players pp
@@ -160,6 +184,10 @@ if __name__ == "__main__":
     db.initialize_tables()
 
     pss = PlayerStatService(db, start_date, end_date)
-    pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
+    # pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
+    stats = pss.calc_player_avgs_by_year('tatumja01', '2018-10-10', '2023-12-19')
+    for year in stats:
+        player_per = stats[year]
+        print(f"{year} season: {player_per.points * player_per.minutes} PTS")
 
     db.close()

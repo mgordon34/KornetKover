@@ -45,7 +45,7 @@ class MatchupAnalysisService(object):
     def analyze_player_matchups(self, team_one, team_two, p_threshold=25, date=datetime.now().date()):
         for player in team_one["starting"]:
             player_analysis = PlayerAnalysis(player, date)
-            player_stats = self.pss.calc_player_avgs(player, "2022-10-10", self.end_date, self.frame)
+            player_stats = self.pss.calc_player_avgs(player, "2023-10-10", self.end_date, self.frame)
             print("----------analyzing matchups for {}: MIN[{}], PTS[{}], REB[{}], AST[{}]----------".format(
                 player,
                 round(player_stats.minutes, 2),
