@@ -1,4 +1,4 @@
-from source.stats.player_per import PlayerPer
+from kornetkover.stats.player_per import PlayerPer
 
 class PipFactor(object):
     def __init__(

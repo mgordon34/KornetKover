@@ -182,4 +182,6 @@ if __name__ == "__main__":
     db = DB()
     db.initialize_tables()
 
+    print(db.get_games())
+
     db.close()

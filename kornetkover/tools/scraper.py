@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import requests
 
-from source.tools.db import DB
+from kornetkover.tools.db import DB
 
 base_url = "https://www.basketball-reference.com"
 
@@ -193,10 +193,13 @@ def _normalize_stat(stat):
 if __name__ == "__main__":
     db = DB()
 
-    # db.initialize_tables()
-    # start_date = datetime.strptime('2023-10-20', '%Y-%m-%d').date()
-    # end_date = datetime.strptime('2023-12-03', '%Y-%m-%d').date()
+    db.initialize_tables()
+    # start_date = datetime.strptime('2018-10-10', '%Y-%m-%d').date()
+    # end_date = datetime.strptime('2023-12-17', '%Y-%m-%d').date()
     # Scraper.scrape_games(start_date, end_date, db)
+
+    # teams = [('ATL', 'Atlanta Hawks'), ('BOS', 'Boston Celtics'), ('BRK', 'Brooklyn Nets'), ('CHO', 'Charlotte Hornets'), ('CHI', 'Chicago Bulls'), ('CLE', 'Cleveland Cavaliers'), ('DAL', 'Dallas Mavericks'), ('DEN', 'Denver Nuggets'), ('DET', 'Detroit Pistons'), ('GSW', 'Golden State Warriors'), ('HOU', 'Houston Rockets'), ('IND', 'Indiana Pacers'), ('LAC', 'Los Angeles Clippers'), ('LAL', 'Los Angeles Lakers'), ('MEM', 'Memphis Grizzlies'), ('MIA', 'Miami Heat'), ('MIL', 'Milwaukee Bucks'), ('MIN', 'Minnesota Timberwolves'), ('NOP', 'New Orleans Pelicans'), ('NYK', 'New York Knicks'), ('OKC', 'Oklahoma City Thunder'), ('ORL', 'Orlando Magic'), ('PHI', 'Philadelphia 76ers'), ('PHO', 'Phoenix Suns'), ('POR', 'Portland Trail Blazers'), ('SAC', 'Sacramento Kings'), ('SAS', 'San Antonio Spurs'), ('TOR', 'Toronto Raptors'), ('UTA', 'Utah Jazz'), ('WAS', 'Washington Wizards')]
+    # db.add_teams(teams)
 
     rosters = Scraper.get_rosters_for_upcoming_games()
     for game, roster in rosters.items():

@@ -1,7 +1,7 @@
-from source.tools.db import DB
-from source.tools.scraper import Scraper
-from source.stats.player_stat_service import PlayerStatService
-from source.analysis.matchup_analysis_service import MatchupAnalysisService
+from kornetkover.tools.db import DB
+from kornetkover.tools.scraper import Scraper
+from kornetkover.stats.player_stat_service import PlayerStatService
+from kornetkover.analysis.matchup_analysis_service import MatchupAnalysisService
 
 db = DB()
 db.initialize_tables()

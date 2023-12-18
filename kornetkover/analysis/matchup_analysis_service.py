@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from source.analysis.player_analysis import PlayerAnalysis
-from source.stats.pip_factor import PipFactor
-from source.stats.player_per import PlayerPer
-from source.stats.player_stat import PlayerStat
-from source.stats.player_stat_service import PlayerStatService
-from source.tools.db import DB
+from kornetkover.analysis.player_analysis import PlayerAnalysis
+from kornetkover.stats.pip_factor import PipFactor
+from kornetkover.stats.player_per import PlayerPer
+from kornetkover.stats.player_stat import PlayerStat
+from kornetkover.stats.player_stat_service import PlayerStatService
+from kornetkover.tools.db import DB
 
 class MatchupAnalysisService(object):
     def __init__(

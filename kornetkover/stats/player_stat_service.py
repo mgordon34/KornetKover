@@ -2,10 +2,10 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List
 
-from source.tools.db import DB
-from source.stats.player_stat import PlayerStat
-from source.stats.player_per import PlayerPer
-from source.stats.pip_factor import PipFactor
+from kornetkover.tools.db import DB
+from kornetkover.stats.player_stat import PlayerStat
+from kornetkover.stats.player_per import PlayerPer
+from kornetkover.stats.pip_factor import PipFactor
 
 
 class PlayerStatService(object):
