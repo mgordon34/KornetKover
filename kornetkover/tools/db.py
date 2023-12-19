@@ -72,7 +72,6 @@ class DB(object):
                 id SERIAL PRIMARY KEY,
                 player_index VARCHAR(20) REFERENCES players(index),
                 defender_index VARCHAR(20) REFERENCES players(index),
-                frame INT NOT NULL,
                 game_count INT NOT NULL,
                 minutes REAL NOT NULL,
                 points REAL NOT NULL,

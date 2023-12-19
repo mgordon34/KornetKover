@@ -1,12 +1,15 @@
+from collections import defaultdict
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
+from statistics import mean
 from typing import List
 
 from kornetkover.tools.db import DB
 from kornetkover.stats.player_stat import PlayerStat
 from kornetkover.stats.player_per import PlayerPer
 from kornetkover.stats.pip_factor import PipFactor
+from kornetkover.stats.utils import date_to_str, get_nba_year_from_date, str_to_date
 
 
 class PlayerStatService(object):
@@ -28,10 +31,9 @@ class PlayerStatService(object):
                  LEFT join games gg ON gg.id=pg.game
                  WHERE pg.player_index='{0}' AND gg.date>'{1}' AND gg.date<'{2}'"""
         
-        print(f"cur_date: {start_date}")
-        print(f"end_date: {end_date}")
         res = self.db.execute_query(sql.format(player_index, start_date, end_date))[0]
-        print(res)
+        if not res or not res[0]:
+            return None
         player_per = self.create_player_per(frame, *res)
 
         return player_per
@@ -39,13 +41,11 @@ class PlayerStatService(object):
     def calc_player_avgs_by_year(
         self,
         player_index: str,
-        start_date: str,
-        end_date: str,
+        start_date: datetime.date,
+        end_date: datetime.date,
     ) -> dict:
-        cur_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        cur_date = start_date
         player_avgs = {}
-
 
         while cur_date < end_date:
             cur_year = str(cur_date.year)
@@ -64,32 +64,78 @@ class PlayerStatService(object):
         res = self.db.execute_query(sql.format(mins_floor))
         return [player[0] for player in res]
 
-    def calc_pip_factor(
+    def get_related_games(
         self,
-        player_index: str,
-        defender_index: str,
+        primary_index: str,
+        other_index: str,
+        is_teammate: bool,
         start_date: str,
         end_date: str,
-        frame: int,
-    ) -> PipFactor:
-        sql = """SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.rebounds), AVG(pg.assists)
-                 FROM player_games pg
-	             LEFT JOIN games gg ON gg.id = pg.game
-	             WHERE pg.player_index='{0}' AND gg.date>'{2}' AND gg.date<'{3}'
+    ) -> List[PlayerPer]:
+        base_sql = """SELECT pg.minutes, pg.points, pg.rebounds, pg.assists, gg.date
+                      FROM player_games pg
+                      LEFT JOIN games gg ON gg.id = pg.game
+                      WHERE pg.player_index='{0}' AND gg.date>'{2}' AND gg.date<'{3}'"""
+        opponent_filter = """
+                AND (
+                    SELECT COUNT(*) FROM games ga
+                    LEFT JOIN player_games pg ON pg.game=ga.id
+                    WHERE ga.id=gg.id AND pg.player_index IN ('{0}','{1}')
+                ) > 1;"""
+        teammate_filter = """
                  AND (
                      SELECT COUNT(*) FROM games ga
                      LEFT JOIN player_games pg ON pg.game=ga.id
-                     WHERE ga.id=gg.id AND pg.player_index IN ('{0}','{1}')
-                 ) > 1;"""
+                     WHERE ga.id=gg.id AND pg.player_index='{0}'
+                 ) = 1
+                 AND (
+                     SELECT COUNT(*) FROM games ga
+                     LEFT JOIN player_games pg ON pg.game=ga.id
+                     WHERE ga.id=gg.id AND pg.player_index='{1}'
+                 ) = 0;"""
 
-        res = self.db.execute_query(sql.format(player_index, defender_index, start_date, end_date))[0]
-        if not res[0] or res[1] == 0:
+        if is_teammate:
+            sql = base_sql + teammate_filter
+        else:
+            sql = base_sql + opponent_filter
+
+        player_stats = []
+        res = self.db.execute_query(sql.format(primary_index, other_index, start_date, end_date))
+        for game in res:
+            player_stats.append((PlayerStat(*game)))
+
+        return player_stats
+
+    def calc_pip_factor(
+        self,
+        primary_index: str,
+        other_index: str,
+        player_pers: dict,
+        related_games: list[PlayerStat],
+    ) -> PipFactor:
+        total_pchanges = {
+            "minutes": 0.0,
+            "points": 0.0,
+            "rebounds": 0.0,
+            "assists": 0.0,
+        }
+        game_count = 0
+        for game in related_games:
+            if game.minutes == 0:
+                continue
+
+            yearly_per = player_pers[get_nba_year_from_date(game.date)]
+            game_per = self.create_player_per(1, 1, game.minutes, game.points, game.rebounds, game.assists)
+            pchanges = self.calc_player_delta(yearly_per, game_per)
+
+            for stat in total_pchanges:
+                total_pchanges[stat] = total_pchanges[stat] + pchanges[stat]
+            game_count += 1
+
+        if game_count == 0:
             return None
+        return PipFactor(primary_index, other_index, game_count, total_pchanges["minutes"]/game_count, total_pchanges["points"]/game_count, total_pchanges["rebounds"]/game_count, total_pchanges["assists"]/game_count)
 
-        player_per = self.create_player_per(frame, *res)
-        pip_factor = PipFactor(player_index, defender_index, player_per)
-
-        return pip_factor
 
     def create_player_per(
         self,
@@ -106,6 +152,26 @@ class PlayerStatService(object):
         assists_per = float(avg_assists) / avg_minutes
 
         return PlayerPer(frame, num_games, avg_minutes, points_per, rebounds_per, assists_per)
+
+    def calc_player_delta(self, player_avgs: PlayerPer, game: PlayerPer) -> float:
+        points_delta = game.points - player_avgs.points
+        points_pchange = round((points_delta / player_avgs.points) * 100, 2)
+
+        rebounds_delta = game.rebounds - player_avgs.rebounds
+        rebounds_pchange = round((rebounds_delta / player_avgs.rebounds) * 100, 2)
+
+        assists_delta = game.assists - player_avgs.assists
+        assists_pchange = round((assists_delta / player_avgs.assists) * 100, 2)
+
+        minutes_delta = game.minutes - player_avgs.minutes
+        minutes_pchange = round((minutes_delta / player_avgs.minutes) * 100, 2)
+
+        return {
+            "points": points_pchange,
+            "rebounds": rebounds_pchange,
+            "assists": assists_pchange,
+            "minutes": minutes_pchange,
+        }
 
 
     def calc_missing_teammate_pip_factor(
@@ -174,10 +240,10 @@ class PlayerStatService(object):
 
 
 if __name__ == "__main__":
-    start_date = "2017-10-01"
+    start_date = "2018-10-01"
     end_date = "2023-12-03"
-    player_index = "gordoaa01"
-    defender_index = "bogdabo01"
+    player_index = "jamesle01"
+    defender_index = "embiijo01"
     frame = 5
 
     db = DB()
@@ -185,9 +251,15 @@ if __name__ == "__main__":
 
     pss = PlayerStatService(db, start_date, end_date)
     # pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
-    stats = pss.calc_player_avgs_by_year('tatumja01', '2018-10-10', '2023-12-19')
-    for year in stats:
-        player_per = stats[year]
-        print(f"{year} season: {player_per.points * player_per.minutes} PTS")
+    # stats = pss.calc_player_avgs_by_year('tatumja01', '2018-10-10', '2023-12-19')
+    # for year in stats:
+    #     player_per = stats[year]
+    #     print(f"{year} season: {player_per.points * player_per.minutes} PTS")
+
+    per_avgs = pss.calc_player_avgs_by_year(player_index, str_to_date(start_date), str_to_date(end_date))
+    [print(per_avgs[year].__dict__) for year in per_avgs]
+    games = pss.get_related_games(player_index, defender_index, False, start_date, end_date)
+    pip = pss.calc_pip_factor(player_index, defender_index, per_avgs, games)
+    print(pip.__dict__)
 
     db.close()

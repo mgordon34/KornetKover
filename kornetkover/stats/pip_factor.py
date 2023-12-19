@@ -1,24 +1,29 @@
-from kornetkover.stats.player_per import PlayerPer
-
 class PipFactor(object):
     def __init__(
         self,
         player_index: str,
         defender_index: str,
-        player_per: PlayerPer,
+        num_games: int,
+        minutes: float,
+        points: float,
+        rebounds: float,
+        assists: float,
     ) -> None:
         self.player_index = player_index
         self.defender_index = defender_index
-        self.player_per = player_per
+        self.num_games = num_games
+        self.minutes= minutes
+        self.points= points
+        self.rebounds= rebounds
+        self.assists= assists
 
     def to_db(self) -> tuple:
         return (
             self.player_index,
             self.defender_index,
-            self.player_per.frame,
-            self.player_per.num_games,
-            self.player_per.minutes,
-            self.player_per.points,
-            self.player_per.rebounds,
-            self.player_per.assists,
+            self.num_games,
+            self.minutes,
+            self.points,
+            self.rebounds,
+            self.assists,
         )
