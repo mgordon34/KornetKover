@@ -8,7 +8,7 @@ from typing import List
 from kornetkover.tools.db import DB
 from kornetkover.stats.player_stat import PlayerStat
 from kornetkover.stats.player_per import PlayerPer
-from kornetkover.stats.pip_factor import PipFactor
+from kornetkover.stats.pip_factor import PipFactor, RelationshipType
 from kornetkover.stats.utils import date_to_str, get_nba_year_from_date, str_to_date
 
 
@@ -68,7 +68,7 @@ class PlayerStatService(object):
         self,
         primary_index: str,
         other_index: str,
-        is_teammate: bool,
+        relationship: RelationshipType,
         start_date: str,
         end_date: str,
     ) -> List[PlayerPer]:
@@ -94,7 +94,7 @@ class PlayerStatService(object):
                      WHERE ga.id=gg.id AND pg.player_index='{1}'
                  ) = 0;"""
 
-        if is_teammate:
+        if relationship == RelationshipType.TEAMMATE:
             sql = base_sql + teammate_filter
         else:
             sql = base_sql + opponent_filter
@@ -110,6 +110,7 @@ class PlayerStatService(object):
         self,
         primary_index: str,
         other_index: str,
+        relationship: RelationshipType,
         player_pers: dict,
         related_games: list[PlayerStat],
     ) -> PipFactor:
@@ -134,7 +135,7 @@ class PlayerStatService(object):
 
         if game_count == 0:
             return None
-        return PipFactor(primary_index, other_index, game_count, total_pchanges["minutes"]/game_count, total_pchanges["points"]/game_count, total_pchanges["rebounds"]/game_count, total_pchanges["assists"]/game_count)
+        return PipFactor(primary_index, other_index, relationship, game_count, total_pchanges["minutes"]/game_count, total_pchanges["points"]/game_count, total_pchanges["rebounds"]/game_count, total_pchanges["assists"]/game_count)
 
 
     def create_player_per(

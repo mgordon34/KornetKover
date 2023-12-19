@@ -5,6 +5,7 @@ class PlayerAnalysis(object):
         self.player_index = player_index
         self.date = date
         self.pip_factors = []
+        self.notable_stats = []
         self.prediction = None
 
     def add_pip_factor(self, pip_factor):

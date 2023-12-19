@@ -1,16 +1,25 @@
+from enum import Enum
+
+class RelationshipType(Enum):
+    TEAMMATE = "teammate"
+    OPPONENT = "opponent"
+
+
 class PipFactor(object):
     def __init__(
         self,
-        player_index: str,
-        defender_index: str,
+        primary_index: str,
+        other_index: str,
+        relationship: RelationshipType, 
         num_games: int,
         minutes: float,
         points: float,
         rebounds: float,
         assists: float,
     ) -> None:
-        self.player_index = player_index
-        self.defender_index = defender_index
+        self.primary_index = primary_index
+        self.other_index = other_index
+        self.relationship = relationship
         self.num_games = num_games
         self.minutes= minutes
         self.points= points
@@ -19,8 +28,9 @@ class PipFactor(object):
 
     def to_db(self) -> tuple:
         return (
-            self.player_index,
-            self.defender_index,
+            self.primary_index,
+            self.other_index,
+            self.relationship,
             self.num_games,
             self.minutes,
             self.points,

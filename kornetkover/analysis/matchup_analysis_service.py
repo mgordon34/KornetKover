@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from kornetkover.analysis.player_analysis import PlayerAnalysis
-from kornetkover.stats.pip_factor import PipFactor
+from kornetkover.stats.pip_factor import PipFactor, RelationshipType
 from kornetkover.stats.player_per import PlayerPer
 from kornetkover.stats.player_stat import PlayerStat
 from kornetkover.stats.player_stat_service import PlayerStatService
@@ -37,10 +37,11 @@ class MatchupAnalysisService(object):
             ))
 
             for teammate in team_one["out"]:
-                related_games = self.pss.get_related_games(player, teammate, True, "2023-10-10", self.end_date)
-                pip_factor = self.pss.calc_pip_factor(player, teammate, player_stats, related_games)
+                related_games = self.pss.get_related_games(player, teammate, RelationshipType.TEAMMATE, "2023-10-10", self.end_date)
+                pip_factor = self.pss.calc_pip_factor(player, teammate, RelationshipType.TEAMMATE, player_stats, related_games)
                 if not pip_factor:
                     continue
+                player_analysis.add_pip_factor(pip_factor)
 
                 notable_stats = self.find_notable_stats(pip_factor, p_threshold)
                 for stat in notable_stats:
@@ -52,10 +53,11 @@ class MatchupAnalysisService(object):
                     predicted_stat = self.get_predicted_value(current_stat_value, stat_pchange)
                     print(f"[{pip_factor.num_games}]{player} with {teammate} missing leads to {stat_pchange} change in {stat}: {predicted_stat}")
             for matchup in team_two["starting"]:
-                related_games = self.pss.get_related_games(player, matchup, False, self.start_date, self.end_date)
-                pip_factor = self.pss.calc_pip_factor(player, matchup, player_stats, related_games)
+                related_games = self.pss.get_related_games(player, matchup, RelationshipType.OPPONENT, self.start_date, self.end_date)
+                pip_factor = self.pss.calc_pip_factor(player, matchup, RelationshipType.OPPONENT, player_stats, related_games)
                 if not pip_factor:
                     continue
+                player_analysis.add_pip_factor(pip_factor)
 
                 notable_stats = self.find_notable_stats(pip_factor, p_threshold)
                 for stat in notable_stats:
@@ -81,3 +83,6 @@ class MatchupAnalysisService(object):
     def get_predicted_value(self, current_value: float, pchange: float) -> float:
         predicted_value = current_value + (current_value * pchange/100)
         return round(predicted_value, 2)
+
+    def predict_stats(player_analysis):
+        return
