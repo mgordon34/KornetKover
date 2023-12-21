@@ -27,6 +27,10 @@ class MatchupAnalysisService(object):
         for player in team_one["starting"]:
             player_stats = self.pss.calc_player_avgs_by_year(player, str_to_date(self.start_date), str_to_date(self.end_date))
             current_stats = player_stats[get_nba_year_from_date(str_to_date(self.end_date))]
+
+            if not current_stats:
+                continue
+
             player_analysis = PlayerAnalysis(player, date, current_stats)
             print("----------analyzing matchups for {}: MIN[{}], PTS[{}], REB[{}], AST[{}]----------".format(
                 player,

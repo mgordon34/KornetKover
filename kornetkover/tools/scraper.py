@@ -4,7 +4,9 @@ import time
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import requests
+from unidecode import unidecode
 
+from kornetkover.stats.prop_line import PropLine
 from kornetkover.tools.db import DB
 
 base_url = "https://www.basketball-reference.com"
@@ -180,6 +182,77 @@ class Scraper(object):
 
         return games
 
+    @classmethod
+    def get_prop_lines(cls, date_str: str) -> dict:
+        game_urls = cls.get_covers_games_for_date(date_str)
+
+        prop_lines = {}
+        for game_url in game_urls:
+            player_urls = cls.get_covers_players_for_game(game_url)
+            for player_url in player_urls:
+                player_name = player_url.split("/")[6].replace("-", " ")
+                prop_lines[player_name] = cls.get_prop_lines_for_player(player_url)
+
+        return prop_lines
+
+    @classmethod
+    def get_covers_games_for_date(cls, date_str: str) -> list[str]:
+        url = f"https://www.covers.com/sports/nba/matchups?selectedDate={date_str}"
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        games = soup.find_all("div", class_="cmg_matchup_game_box")
+
+        game_urls = []
+        for game in games:
+            game_urls.append(game.find("div", class_="__right_col").find("a")["href"])
+
+        return game_urls
+
+    @classmethod
+    def get_covers_players_for_game(cls, game_url: str) -> list[str]:
+        url = f"https://www.covers.com/{game_url}/props"
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        players = soup.find_all("div", class_="player-headshot-name")
+
+        player_urls = []
+        for player in players:
+            player_urls.append(player.find("a")["href"])
+
+        return player_urls
+
+    @classmethod
+    def get_prop_lines_for_player(cls, player_url: str) -> dict[PropLine]:
+        prop_names = {
+            "points": "points-scored",
+            "rebounds": "total-rebounds",
+            "assists": "total-assists",
+            "points-rebounds-assists": "total-points,-rebounds,-and-assists",
+            "points-rebounds": "points-and-rebounds",
+            "points-assists": "points-and-assists",
+            "rebounds-assists": "rebounds-and-assists",
+        }
+
+        url = f"https://www.covers.com/{player_url}"
+        page = requests.get(url)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        prop_lines = {}
+        for stat, prop_name in prop_names.items():
+            lines = soup.find(id=prop_name)
+            over_block = lines.find_all("div", class_=f"other-over-odds")[1].find("div", class_="odds").text.split()
+            under_block = lines.find_all("div", class_=f"other-under-odds")[1].find("div", class_="odds").text.split()
+
+            line = float(over_block[0][1:])
+            over_odds = over_block[1]
+            under_odds = under_block[1]
+
+            prop_lines[stat] = PropLine(stat, line, over_odds, under_odds)
+
+        return prop_lines
+
 def _convert_mp(mp_string):
     (m, s) = mp_string.split(":")
     return int(m) + round(int(s)/60, 2)
@@ -201,10 +274,10 @@ if __name__ == "__main__":
     # teams = [('ATL', 'Atlanta Hawks'), ('BOS', 'Boston Celtics'), ('BRK', 'Brooklyn Nets'), ('CHO', 'Charlotte Hornets'), ('CHI', 'Chicago Bulls'), ('CLE', 'Cleveland Cavaliers'), ('DAL', 'Dallas Mavericks'), ('DEN', 'Denver Nuggets'), ('DET', 'Detroit Pistons'), ('GSW', 'Golden State Warriors'), ('HOU', 'Houston Rockets'), ('IND', 'Indiana Pacers'), ('LAC', 'Los Angeles Clippers'), ('LAL', 'Los Angeles Lakers'), ('MEM', 'Memphis Grizzlies'), ('MIA', 'Miami Heat'), ('MIL', 'Milwaukee Bucks'), ('MIN', 'Minnesota Timberwolves'), ('NOP', 'New Orleans Pelicans'), ('NYK', 'New York Knicks'), ('OKC', 'Oklahoma City Thunder'), ('ORL', 'Orlando Magic'), ('PHI', 'Philadelphia 76ers'), ('PHO', 'Phoenix Suns'), ('POR', 'Portland Trail Blazers'), ('SAC', 'Sacramento Kings'), ('SAS', 'San Antonio Spurs'), ('TOR', 'Toronto Raptors'), ('UTA', 'Utah Jazz'), ('WAS', 'Washington Wizards')]
     # db.add_teams(teams)
 
-    rosters = Scraper.get_rosters_for_upcoming_games()
-    for game, roster in rosters.items():
-        print(f"------{game}------")
-        for team in roster:
-            print(roster[team])
+    props = Scraper.get_prop_lines('2023-12-21')
+    for player, prop in props.items():
+        print(f"{player}--------------------")
+        for k, v in prop.items():
+            print(v.__dict__)
 
     db.close()

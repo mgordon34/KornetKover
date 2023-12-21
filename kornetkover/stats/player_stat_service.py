@@ -156,16 +156,16 @@ class PlayerStatService(object):
 
     def calc_player_delta(self, player_avgs: PlayerPer, game: PlayerPer) -> float:
         points_delta = game.points - player_avgs.points
-        points_pchange = round((points_delta / player_avgs.points) * 100, 2)
+        points_pchange = round((points_delta / player_avgs.points) * 100, 2) if player_avgs.points else 0
 
         rebounds_delta = game.rebounds - player_avgs.rebounds
-        rebounds_pchange = round((rebounds_delta / player_avgs.rebounds) * 100, 2)
+        rebounds_pchange = round((rebounds_delta / player_avgs.rebounds) * 100, 2) if player_avgs.rebounds else 0
 
         assists_delta = game.assists - player_avgs.assists
-        assists_pchange = round((assists_delta / player_avgs.assists) * 100, 2)
+        assists_pchange = round((assists_delta / player_avgs.assists) * 100, 2) if player_avgs.assists else 0
 
         minutes_delta = game.minutes - player_avgs.minutes
-        minutes_pchange = round((minutes_delta / player_avgs.minutes) * 100, 2)
+        minutes_pchange = round((minutes_delta / player_avgs.minutes) * 100, 2) if player_avgs.minutes else 0
 
         return {
             "points": points_pchange,
