@@ -24,6 +24,8 @@ class MatchupAnalysisService(object):
         self.pss = PlayerStatService(db)
 
     def analyze_player_matchups(self, team_one, team_two, p_threshold=25, date=datetime.now().date()):
+        player_analyses = []
+        
         for player in team_one["starting"]:
             player_stats = self.pss.calc_player_avgs_by_year(player, str_to_date(self.start_date), str_to_date(self.end_date))
             current_stats = player_stats[get_nba_year_from_date(str_to_date(self.end_date))]
@@ -83,6 +85,8 @@ class MatchupAnalysisService(object):
                 player_analysis.prediction.rebounds,
                 player_analysis.prediction.assists,
             ))
+
+            player_analyses.append(player_analysis)
 
             
 

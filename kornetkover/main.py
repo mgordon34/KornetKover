@@ -8,9 +8,14 @@ db.initialize_tables()
 mas = MatchupAnalysisService(db)
 
 rosters = Scraper.get_rosters_for_upcoming_games()
+for roster in rosters:
+    print(rosters[roster])
+
+all_player_analyses = []
 
 for game, roster in rosters.items():
     print(f"----------Analyzing matchups for {game}----------")
-    mas.analyze_player_matchups(roster["away"], roster["home"])
-    mas.analyze_player_matchups(roster["home"], roster["away"])
+    all_player_analyses.append(mas.analyze_player_matchups(roster["away"], roster["home"]))
+    all_player_analyses.append(mas.analyze_player_matchups(roster["home"], roster["away"]))
     print(f"-------------------------------------------------\n")
+
