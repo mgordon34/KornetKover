@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import requests
 from unidecode import unidecode
 
-from kornetkover.stats.prop_line import PropLine
+from kornetkover.odds.prop_line import PropLine
 from kornetkover.tools.db import DB
 
 base_url = "https://www.basketball-reference.com"

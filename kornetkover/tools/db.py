@@ -79,6 +79,18 @@ class DB(object):
                 assists REAL NOT NULL,
                 CONSTRAINT uq_pip_index UNIQUE(player_index, defender_index)
             )""")
+        commands.append("""
+            CREATE TABLE IF NOT EXISTS player_odds (
+                id SERIAL PRIMARY KEY,
+                player_index VARCHAR(20) REFERENCES players(index),
+                date DATE NOT NULL,
+                stat VARCHAR(50),
+                line REAL NOT NULL,
+                over_odds INT NOT NULL,
+                under_odds INT NOT NULL,
+                CONSTRAINT uq_prop_index UNIQUE(player_index, date, stat)
+            )""")
+
 
         for command in commands:
             cur.execute(command)
@@ -154,6 +166,13 @@ class DB(object):
                  ON CONFLICT (player_index, defender_index) DO NOTHING"""
 
         return self._bulk_insert(sql, pip_factors)
+
+    def add_prop_lines(self, prop_lines):
+        sql = """INSERT INTO prop_lines(player_index, stat, line, over_odds, under_odds, date)
+                 VALUES %s
+                 ON CONFLICT (player_index, stat, date) DO UPDATE"""
+
+        return self._bulk_insert(sql, prop_lines)
 
     def _bulk_insert(self, sql, objects):
         count = 0

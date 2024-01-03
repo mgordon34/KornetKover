@@ -18,9 +18,9 @@ class PlayerService(object):
 
     def name_to_player(self, name: str):
         sql = """SELECT index, name from players
-                  WHERE UPPER(name) LIKE UPPER('{}')"""
+                  WHERE UPPER(name) LIKE UPPER('%{}%')"""
 
-        res = self.db.execute_query(sql.format(index))
+        res = self.db.execute_query(sql.format(name))
         if not res or not res[0]:
             return None
 
