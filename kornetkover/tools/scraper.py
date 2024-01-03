@@ -158,7 +158,7 @@ class Scraper(object):
             data = player.find_all("td")
             team = data[0].find("a")["href"].split("/")[2]
             status = data[2].text
-            if status.startswith("Out"):
+            if "out" in status.lower() or "questionable" in status.lower():
                 missing_players[team]["out"].append(index)
             elif status.startswith("Day To Day"):
                 missing_players[team]["dtd"].append(index)
