@@ -82,7 +82,7 @@ class Scraper(object):
                 continue
 
             index = (basic_stats[i].find("th")["data-append-csv"])
-            name = basic_stats[i].find("th").find("a").text
+            name = unidecode(basic_stats[i].find("th").find("a").text)
             minutes = _convert_mp(basic_stats[i].find("td", {"data-stat": "mp"}).text)
             rebounds = _normalize_stat(basic_stats[i].find("td", {"data-stat": "trb"}).text)
             assists = _normalize_stat(basic_stats[i].find("td", {"data-stat": "ast"}).text)
@@ -190,8 +190,10 @@ class Scraper(object):
         for game_url in game_urls:
             player_urls = cls.get_covers_players_for_game(game_url)
             for player_url in player_urls:
-                player_name = player_url.split("/")[6].replace("-", " ")
-                prop_lines[player_name] = cls.get_prop_lines_for_player(player_url)
+                player_name = " ".join(player_url.split("/")[6].split("-")[:2])
+                player_prop = cls.get_prop_lines_for_player(player_url)
+                if player_prop:
+                    prop_lines[player_name] = player_prop
 
         return prop_lines
 
@@ -225,6 +227,7 @@ class Scraper(object):
 
     @classmethod
     def get_prop_lines_for_player(cls, player_url: str) -> dict[PropLine]:
+        print(f"getting prop lines for {player_url}")
         prop_names = {
             "points": "points-scored",
             "rebounds": "total-rebounds",
@@ -242,6 +245,8 @@ class Scraper(object):
         prop_lines = {}
         for stat, prop_name in prop_names.items():
             lines = soup.find(id=prop_name)
+            if not lines:
+                return None
             over_block = lines.find_all("div", class_=f"other-over-odds")[1].find("div", class_="odds").text.split()
             under_block = lines.find_all("div", class_=f"other-under-odds")[1].find("div", class_="odds").text.split()
 
@@ -276,7 +281,7 @@ if __name__ == "__main__":
 
     today = datetime.now().strftime("%Y-%m-%d")
     print(today)
-    props = Scraper.get_prop_lines('2023-12-31')
+    props = Scraper.get_prop_lines('2024-01-03')
     for player, prop in props.items():
         print(f"{player}--------------------")
         for k, v in prop.items():
