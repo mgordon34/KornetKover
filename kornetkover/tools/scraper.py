@@ -82,7 +82,7 @@ class Scraper(object):
                 continue
 
             index = (basic_stats[i].find("th")["data-append-csv"])
-            name = unidecode(basic_stats[i].find("th").find("a").text)
+            name = unidecode(basic_stats[i].find("th").find("a").text).split(" ")[:2]
             minutes = _convert_mp(basic_stats[i].find("td", {"data-stat": "mp"}).text)
             rebounds = _normalize_stat(basic_stats[i].find("td", {"data-stat": "trb"}).text)
             assists = _normalize_stat(basic_stats[i].find("td", {"data-stat": "ast"}).text)
@@ -130,7 +130,7 @@ class Scraper(object):
             index = player.find("a")["href"].split("/")[3].split(".")[0]
             avg_min = cls._get_avg_minutes_from_player_tr(player)
             if index not in missing_players:
-                if avg_min > 20 and len(players["starting"]) <= 5:
+                if avg_min > 20 and len(players["starting"]) <= 8:
                     players["starting"].append(index)
                 elif avg_min > 10:
                     players["bench"].append(index)

@@ -33,6 +33,6 @@ if __name__ == "__main__":
     ps = PlayerService(db)
     db.initialize_tables()
 
-    index = "kevin knox"
+    index = "jaime jaquez"
     player = ps.name_to_player(index)
     print(player.__dict__)

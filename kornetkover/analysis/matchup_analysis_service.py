@@ -88,6 +88,8 @@ class MatchupAnalysisService(object):
 
             player_analyses.append(player_analysis)
 
+        return player_analyses
+
             
 
     def find_notable_stats(self, pip_factor: PipFactor, p_threshold: int):

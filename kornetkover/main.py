@@ -1,21 +1,35 @@
-from kornetkover.tools.db import DB
-from kornetkover.tools.scraper import Scraper
-from kornetkover.stats.player_stat_service import PlayerStatService
 from kornetkover.analysis.matchup_analysis_service import MatchupAnalysisService
+from kornetkover.tools.db import DB
+from kornetkover.players.player_service import PlayerService
+from kornetkover.players.player import Player
+from kornetkover.stats.player_stat_service import PlayerStatService
+from kornetkover.tools.scraper import Scraper
 
 db = DB()
 db.initialize_tables()
 mas = MatchupAnalysisService(db)
+ps = PlayerService(db)
 
 rosters = Scraper.get_rosters_for_upcoming_games()
 for roster in rosters:
     print(rosters[roster])
 
-all_player_analyses = []
+prop_lines = Scraper.get_prop_lines("2024-01-03")
 
 for game, roster in rosters.items():
+    analyses = []
     print(f"----------Analyzing matchups for {game}----------")
-    all_player_analyses.append(mas.analyze_player_matchups(roster["away"], roster["home"]))
-    all_player_analyses.append(mas.analyze_player_matchups(roster["home"], roster["away"]))
+    analyses += mas.analyze_player_matchups(roster["away"], roster["home"])
+    analyses += mas.analyze_player_matchups(roster["home"], roster["away"])
+    print(f"-------------------------------------------------\n")
+    for analysis in analyses:
+        player_name = " ".join(ps.index_to_player(analysis.player_index).name.replace("'", " ").split(" ")[:2]).lower()
+        if player_name not in prop_lines:
+            continue
+
+        points_diff = analysis.prediction.points - prop_lines[player_name]["points"].line
+        rebounds_diff = analysis.prediction.rebounds - prop_lines[player_name]["rebounds"].line
+        assits_diff = analysis.prediction.assists - prop_lines[player_name]["assists"].line
+        print(f"[{player_name}]: PTS:{points_diff} REB:{rebounds_diff} AST:{assits_diff}")
     print(f"-------------------------------------------------\n")
 
