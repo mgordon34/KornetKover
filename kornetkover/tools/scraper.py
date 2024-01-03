@@ -207,7 +207,7 @@ class Scraper(object):
 
         game_urls = []
         for game in games:
-            game_urls.append(game.find("div", class_="__right_col").find("a")["href"])
+            game_urls.append(game["data-link"])
 
         return game_urls
 
@@ -281,7 +281,7 @@ if __name__ == "__main__":
 
     today = datetime.now().strftime("%Y-%m-%d")
     print(today)
-    props = Scraper.get_prop_lines('2024-01-03')
+    props = Scraper.get_prop_lines('2024-01-02')
     for player, prop in props.items():
         print(f"{player}--------------------")
         for k, v in prop.items():
