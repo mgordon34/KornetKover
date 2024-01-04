@@ -1,3 +1,4 @@
+from datetime import datetime
 from unidecode import unidecode
 
 from kornetkover.analysis.matchup_analysis_service import MatchupAnalysisService
@@ -6,11 +7,13 @@ from kornetkover.players.player_service import PlayerService
 from kornetkover.players.player import Player
 from kornetkover.stats.player_stat_service import PlayerStatService
 from kornetkover.tools.scraper import Scraper
+from kornetkover.odds.player_odds import PlayerOdds
 
 db = DB()
 db.initialize_tables()
 mas = MatchupAnalysisService(db)
 ps = PlayerService(db)
+date = datetime.now()
 
 rosters = Scraper.get_rosters_for_upcoming_games()
 for roster in rosters:
@@ -28,6 +31,9 @@ for game, roster in rosters.items():
         player_name = " ".join(unidecode(ps.index_to_player(analysis.player_index).name).replace("'", " ").replace("-", " ").split(" ")[:2]).lower()
         if player_name not in prop_lines:
             continue
+        player_odds = PlayerOdds(analysis.player_index, date)
+        for stat, prop_line in prop_lines.items():
+            player_odds.add_prop_line(stat, prop_line)
 
         points_diff = analysis.prediction.points - prop_lines[player_name]["points"].line
         rebounds_diff = analysis.prediction.rebounds - prop_lines[player_name]["rebounds"].line

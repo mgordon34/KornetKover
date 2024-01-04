@@ -21,7 +21,8 @@ class OddsService(object):
     def add_player_odds(self, player_odds):
         sql = """INSERT INTO player_odds(player_index, date, stat, line, over_odds, under_odds)
                  VALUES %s
-                 ON CONFLICT (player_index, stat, date) DO NOTHING"""
+                 ON CONFLICT (player_index, stat, date) DO UPDATE SET
+                 line = EXCLUDED.line, over_odds = EXCLUDED.over_odds, under_odds = EXCLUDED.under_odds"""
 
         return self.db._bulk_insert(sql, player_odds)
 
@@ -54,9 +55,7 @@ if __name__ == "__main__":
     os = OddsService(db)
     ps = PlayerService(db)
 
-    player = ps.name_to_player("jaime jaquez")
-
     date = datetime.now().date()
     os.update_player_odds_for_date(date)
 
-    print(os.get_player_odds("jaqueja01", date))
+    print(os.get_player_odds("caldwke01", date))
