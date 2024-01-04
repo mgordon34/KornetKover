@@ -1,3 +1,5 @@
+from unidecode import unidecode
+
 from kornetkover.analysis.matchup_analysis_service import MatchupAnalysisService
 from kornetkover.tools.db import DB
 from kornetkover.players.player_service import PlayerService
@@ -14,7 +16,7 @@ rosters = Scraper.get_rosters_for_upcoming_games()
 for roster in rosters:
     print(rosters[roster])
 
-prop_lines = Scraper.get_prop_lines("2024-01-03")
+prop_lines = Scraper.get_prop_lines("2024-01-04")
 
 for game, roster in rosters.items():
     analyses = []
@@ -23,7 +25,7 @@ for game, roster in rosters.items():
     analyses += mas.analyze_player_matchups(roster["home"], roster["away"])
     print(f"-------------------------------------------------\n")
     for analysis in analyses:
-        player_name = " ".join(ps.index_to_player(analysis.player_index).name.replace("'", " ").split(" ")[:2]).lower()
+        player_name = " ".join(unidecode(ps.index_to_player(analysis.player_index).name).replace("'", " ").replace("-", " ").split(" ")[:2]).lower()
         if player_name not in prop_lines:
             continue
 
@@ -32,4 +34,3 @@ for game, roster in rosters.items():
         assits_diff = analysis.prediction.assists - prop_lines[player_name]["assists"].line
         print(f"[{player_name}]: PTS:{points_diff} REB:{rebounds_diff} AST:{assits_diff}")
     print(f"-------------------------------------------------\n")
-
