@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from unidecode import unidecode
 
 from kornetkover.tools.db import DB
 from kornetkover.players.player import Player
@@ -29,6 +30,7 @@ class PlayerService(object):
         player = res[0]
         return Player(player[0], player[1])
 
+
     def find_date_on_active_team(self, player_index: str, team: str) -> datetime.date:
         sql = """SELECT gg.date
                  FROM player_games pg
@@ -41,6 +43,10 @@ class PlayerService(object):
             return None
 
         return res[0][0] + timedelta(days=1)
+
+    @classmethod
+    def normalize_player_name(cls, name: str) -> str:
+        return " ".join(unidecode(name).replace("'", " ").replace("-", " ").split(" ")[:2]).lower()
 
 
 if __name__ == "__main__":

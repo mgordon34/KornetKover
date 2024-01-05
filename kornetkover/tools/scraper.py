@@ -189,16 +189,16 @@ class Scraper(object):
     def get_prop_lines(cls, date_str: str) -> dict:
         game_urls = cls.get_covers_games_for_date(date_str)
 
-        prop_lines = {}
+        player_props = {}
         for game_url in game_urls:
             player_urls = cls.get_covers_players_for_game(game_url)
             for player_url in player_urls:
                 player_name = " ".join(player_url.split("/")[6].split("-")[:2])
-                player_prop = cls.get_prop_lines_for_player(player_url)
-                if player_prop:
-                    prop_lines[player_name] = player_prop
+                prop_lines = cls.get_prop_lines_for_player(player_url)
+                if prop_lines:
+                    player_props[player_name] = prop_lines
 
-        return prop_lines
+        return player_props
 
     @classmethod
     def get_covers_games_for_date(cls, date_str: str) -> list[str]:
@@ -245,7 +245,7 @@ class Scraper(object):
         page = requests.get(url)
         soup = BeautifulSoup(page.content, "html.parser")
 
-        prop_lines = {}
+        prop_lines = []
         for stat, prop_name in prop_names.items():
             lines = soup.find(id=prop_name)
             if not lines:
@@ -257,7 +257,7 @@ class Scraper(object):
             over_odds = over_block[1]
             under_odds = under_block[1]
 
-            prop_lines[stat] = PropLine(stat, line, over_odds, under_odds)
+            prop_lines.append(PropLine(stat, line, over_odds, under_odds))
 
         return prop_lines
 
