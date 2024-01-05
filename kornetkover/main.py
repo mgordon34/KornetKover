@@ -13,13 +13,13 @@ db = DB()
 db.initialize_tables()
 mas = MatchupAnalysisService(db)
 ps = PlayerService(db)
-date = datetime.now()
+date = datetime.now().date()
 
 rosters = Scraper.get_rosters_for_upcoming_games()
 for roster in rosters:
     print(rosters[roster])
 
-prop_lines = Scraper.get_prop_lines("2024-01-04")
+prop_lines = Scraper.get_prop_lines(date.strftime("%Y-%m-%d"))
 
 for game, roster in rosters.items():
     analyses = []
@@ -35,8 +35,8 @@ for game, roster in rosters.items():
         for stat, prop_line in prop_lines.items():
             player_odds.add_prop_line(stat, prop_line)
 
-        points_diff = analysis.prediction.points - prop_lines[player_name]["points"].line
-        rebounds_diff = analysis.prediction.rebounds - prop_lines[player_name]["rebounds"].line
-        assits_diff = analysis.prediction.assists - prop_lines[player_name]["assists"].line
-        print(f"[{player_name}]: PTS:{points_diff} REB:{rebounds_diff} AST:{assits_diff}")
+        points_diff = round(analysis.prediction.points - prop_lines[player_name]["points"].line, 2)
+        rebounds_diff = round(analysis.prediction.rebounds - prop_lines[player_name]["rebounds"].line, 2)
+        assits_diff = round(analysis.prediction.assists - prop_lines[player_name]["assists"].line, 2)
+        print(f"[{player_name:<20}]:\tPTS:{points_diff:<8} REB:{rebounds_diff:<8} AST:{assits_diff:<8}")
     print(f"-------------------------------------------------\n")
