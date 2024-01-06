@@ -5,6 +5,7 @@ from kornetkover.players.player_service import PlayerService
 from kornetkover.tools.db import DB
 from kornetkover.tools.scraper import Scraper
 from kornetkover.odds.prop_line import PropLine
+from kornetkover.odds.player_odds import PlayerOdds
 
 
 class OddsService(object):
@@ -31,12 +32,18 @@ class OddsService(object):
                  FROM player_odds
                  WHERE player_index='{0}' AND date='{1}'"""
         
-        return self.db.execute_query(sql.format(player_index, date))
+        res = self.db.execute_query(sql.format(player_index, date))
+        player_odds = PlayerOdds(player_index, date)
+        for line in res:
+            player_odds.add_prop_line(PropLine(*line[2:]))
+        return player_odds
+        
 
     def update_player_odds_for_date(self, date: datetime.date):
         ps = PlayerService(self.db)
         prop_lines = Scraper.get_prop_lines(date)
         
+        player_odds = []
         for name, lines in prop_lines.items():
             player = ps.name_to_player(name)
             if not player:
@@ -44,9 +51,9 @@ class OddsService(object):
                 continue
 
             index = player.index
-            player_odds = self.to_player_odds(index, date, lines.values())
+            player_odds += self.to_player_odds(index, date, lines)
 
-            self.add_player_odds(player_odds)
+        self.add_player_odds(player_odds)
 
 
 if __name__ == "__main__":
@@ -58,4 +65,5 @@ if __name__ == "__main__":
     date = datetime.now().date()
     os.update_player_odds_for_date(date)
 
-    print(os.get_player_odds("caldwke01", date))
+    odds = os.get_player_odds("anunoog01", date)
+    print(odds)

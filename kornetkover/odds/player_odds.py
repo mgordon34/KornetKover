@@ -9,10 +9,10 @@ class PlayerOdds(object):
         self.player_index = player_index
         self.date = date
         
-        self.prop_lines = {}
+        self.prop_lines = []
 
-    def add_prop_line(self, stat: str, prop_line: PropLine) -> None:
-        self.prop_lines[stat] = prop_line
+    def add_prop_line(self, prop_line: PropLine) -> None:
+        self.prop_lines.append(prop_line)
 
     def to_db(self) -> List[tuple]:
         db_objs = []
