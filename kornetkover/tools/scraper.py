@@ -193,7 +193,7 @@ class Scraper(object):
         for game_url in game_urls:
             player_urls = cls.get_covers_players_for_game(game_url)
             for player_url in player_urls:
-                player_name = " ".join(player_url.split("/")[6].split("-")[:2])
+                player_name = " ".join(player_url.replace(".","").split("/")[6].split("-")[:2])
                 prop_lines = cls.get_prop_lines_for_player(player_url)
                 if prop_lines:
                     player_props[player_name] = prop_lines
