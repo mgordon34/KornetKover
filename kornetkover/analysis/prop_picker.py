@@ -9,6 +9,7 @@ from kornetkover.players.player_service import PlayerService
 from kornetkover.players.player import Player
 from kornetkover.tools.db import DB
 
+
 class PropPicker(object):
     props = []
 
