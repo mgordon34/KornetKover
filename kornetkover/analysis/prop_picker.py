@@ -1,10 +1,13 @@
 from typing import List
 
+from datetime import datetime
+
 from kornetkover.analysis.player_analysis import PlayerAnalysis
-from kornetkover.odds.player_odds import PlayerOdds
+from kornetkover.odds.odds_service import OddsService
 from kornetkover.odds.prop_line import PropLine
 from kornetkover.players.player_service import PlayerService
 from kornetkover.players.player import Player
+from kornetkover.tools.db import DB
 
 class PropPicker(object):
     props = []
@@ -16,17 +19,20 @@ class PropPicker(object):
     def pick_props(
         self,
         analyses: List[PlayerAnalysis],
-        player_props: dict[List[PropLine]],
+        date: datetime.date,
     ) -> List[tuple[Player, List[PropLine]]]:
+        db = DB()
+        os = OddsService(db)
+
         best_props = []
         for analysis in analyses:
             player = self.ps.index_to_player(analysis.player_index)
-            name = PlayerService.normalize_player_name(player.name)
+            player_odds = os.get_player_odds(player.index, date)
 
-            if name not in player_props:
+            if not player_odds:
                 continue
 
-            prop_lines = player_props[name]
+            prop_lines = player_odds.prop_lines
             for prop_line in prop_lines:
                 stats = prop_line.stat.split("-")
                 cumulative_stat = 0

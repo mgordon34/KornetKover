@@ -38,6 +38,10 @@ class OddsService(object):
                  WHERE player_index='{0}' AND date='{1}'"""
 
         res = self.db.execute_query(sql.format(player_index, date))
+
+        if not res:
+            return None
+
         player_odds = PlayerOdds(player_index, date)
         for line in res:
             player_odds.add_prop_line(PropLine(*line[2:]))
@@ -70,5 +74,5 @@ if __name__ == "__main__":
     date = datetime.now().date()
     os.update_player_odds_for_date(date)
 
-    odds = os.get_player_odds("anunoog01", date)
-    print(odds)
+    odds = os.get_player_odds("curryst01", date)
+    print(odds.prop_lines)

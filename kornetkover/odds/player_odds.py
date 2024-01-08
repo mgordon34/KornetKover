@@ -8,7 +8,7 @@ class PlayerOdds(object):
     def __init__(self, player_index: str, date: datetime.date) -> None:
         self.player_index = player_index
         self.date = date
-        
+
         self.prop_lines = []
 
     def add_prop_line(self, prop_line: PropLine) -> None:
