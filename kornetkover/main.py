@@ -1,5 +1,4 @@
 from datetime import datetime
-from unidecode import unidecode
 
 from kornetkover.analysis.matchup_analysis_service import MatchupAnalysisService
 from kornetkover.analysis.prop_picker import PropPicker
