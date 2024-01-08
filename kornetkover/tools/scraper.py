@@ -22,7 +22,6 @@ class Scraper(object):
         full_team_row = active_teams.find_all("tr", class_="full_table")
         teams = []
         for row in full_team_row:
-            team_dict = {}
             team = row.find("th")
             name = team.text
             index = team.find("a")["href"].split("/")[2]
@@ -125,7 +124,6 @@ class Scraper(object):
         player_soup = soup.find(id="per_game").find("tbody").find_all("tr")
 
         players = {"starting": [], "bench": []}
-        i = 0
         for player in player_soup:
             index = player.find("a")["href"].split("/")[3].split(".")[0]
             avg_min = cls._get_avg_minutes_from_player_tr(player)
@@ -250,8 +248,8 @@ class Scraper(object):
             lines = soup.find(id=prop_name)
             if not lines:
                 return None
-            over_block = lines.find_all("div", class_=f"other-over-odds")[1].find("div", class_="odds").text.split()
-            under_block = lines.find_all("div", class_=f"other-under-odds")[1].find("div", class_="odds").text.split()
+            over_block = lines.find_all("div", class_="other-over-odds")[1].find("div", class_="odds").text.split()
+            under_block = lines.find_all("div", class_="other-under-odds")[1].find("div", class_="odds").text.split()
 
             line = float(over_block[0][1:])
             over_odds = over_block[1]
@@ -275,8 +273,8 @@ if __name__ == "__main__":
     db = DB()
 
     db.initialize_tables()
-    start_date = datetime.strptime('2023-12-03', '%Y-%m-%d').date()
-    end_date = datetime.strptime('2024-01-04', '%Y-%m-%d').date()
+    start_date = datetime.strptime('2023-01-04', '%Y-%m-%d').date()
+    end_date = datetime.now().date()
     Scraper.scrape_games(start_date, end_date, db)
 
     # teams = [('ATL', 'Atlanta Hawks'), ('BOS', 'Boston Celtics'), ('BRK', 'Brooklyn Nets'), ('CHO', 'Charlotte Hornets'), ('CHI', 'Chicago Bulls'), ('CLE', 'Cleveland Cavaliers'), ('DAL', 'Dallas Mavericks'), ('DEN', 'Denver Nuggets'), ('DET', 'Detroit Pistons'), ('GSW', 'Golden State Warriors'), ('HOU', 'Houston Rockets'), ('IND', 'Indiana Pacers'), ('LAC', 'Los Angeles Clippers'), ('LAL', 'Los Angeles Lakers'), ('MEM', 'Memphis Grizzlies'), ('MIA', 'Miami Heat'), ('MIL', 'Milwaukee Bucks'), ('MIN', 'Minnesota Timberwolves'), ('NOP', 'New Orleans Pelicans'), ('NYK', 'New York Knicks'), ('OKC', 'Oklahoma City Thunder'), ('ORL', 'Orlando Magic'), ('PHI', 'Philadelphia 76ers'), ('PHO', 'Phoenix Suns'), ('POR', 'Portland Trail Blazers'), ('SAC', 'Sacramento Kings'), ('SAS', 'San Antonio Spurs'), ('TOR', 'Toronto Raptors'), ('UTA', 'Utah Jazz'), ('WAS', 'Washington Wizards')]
