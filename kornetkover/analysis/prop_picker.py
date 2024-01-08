@@ -46,5 +46,5 @@ class PropPicker(object):
             prop_lines.sort(key=lambda item: abs(item.predicted_delta), reverse=True)
             best_props.append((player, prop_lines))
 
-        best_props.sort(key=lambda item: item[1][1].predicted_delta, reverse=True)
-        return best_props[:6] + best_props[-6:]
+        best_props.sort(key=lambda item: item[1][0].predicted_delta, reverse=True)
+        return best_props[:10] + best_props[-10:]
