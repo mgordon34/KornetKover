@@ -75,4 +75,4 @@ if __name__ == "__main__":
     os.update_player_odds_for_date(date)
 
     odds = os.get_player_odds("curryst01", date)
-    print(odds.prop_lines)
+    print(odds)
