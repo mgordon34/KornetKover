@@ -1,11 +1,12 @@
 from datetime import datetime
 
 from kornetkover.analysis.player_analysis import PlayerAnalysis
+from kornetkover.players.player_service import PlayerService
 from kornetkover.stats.pip_factor import PipFactor, RelationshipType
 from kornetkover.stats.player_per import PlayerPer
 from kornetkover.stats.player_stat import PlayerStat
 from kornetkover.stats.player_stat_service import PlayerStatService
-from kornetkover.stats.utils import date_to_str, get_nba_year_from_date, str_to_date
+from kornetkover.stats.utils import get_nba_year_from_date, str_to_date
 from kornetkover.tools.db import DB
 
 class MatchupAnalysisService(object):
@@ -24,11 +25,14 @@ class MatchupAnalysisService(object):
         self.pss = PlayerStatService(db)
 
     def analyze_player_matchups(self, team_one, team_two, p_threshold=25, date=datetime.now().date()):
+        ps = PlayerService(self.db)
+        team_name = team_one["team_name"]
         player_analyses = []
         
         for player in team_one["starting"]:
             player_stats = self.pss.calc_player_avgs_by_year(player, str_to_date(self.start_date), str_to_date(self.end_date))
             current_stats = player_stats[get_nba_year_from_date(str_to_date(self.end_date))]
+            date_on_team = ps.find_date_on_active_team(player, team_name)
 
             if not current_stats:
                 continue
@@ -43,7 +47,8 @@ class MatchupAnalysisService(object):
             ))
 
             for teammate in team_one["out"]:
-                related_games = self.pss.get_related_games(player, teammate, RelationshipType.TEAMMATE, "2023-10-10", self.end_date)
+                teammate_on_team = ps.find_date_on_active_team(teammate, team_name)
+                related_games = self.pss.get_related_games(player, teammate, RelationshipType.TEAMMATE, max(date_on_team, teammate_on_team), self.end_date)
                 pip_factor = self.pss.calc_pip_factor(player, teammate, RelationshipType.TEAMMATE, player_stats, related_games)
                 if not pip_factor:
                     continue

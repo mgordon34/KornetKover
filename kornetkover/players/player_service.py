@@ -40,7 +40,7 @@ class PlayerService(object):
 
         res = self.db.execute_query(sql.format(player_index, team))
         if not res or not res[0]:
-            return None
+            return datetime.strptime("2017-10-10", "%Y-%m-%d").date()
 
         return res[0][0] + timedelta(days=1)
 
@@ -54,6 +54,6 @@ if __name__ == "__main__":
     ps = PlayerService(db)
     db.initialize_tables()
 
-    index = "whitede01"
-    date = ps.find_date_on_active_team(index, 'BOS')
+    index = "willipa01"
+    date = ps.find_date_on_active_team(index, 'CHI')
     print(date)
