@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from kornetkover.stats.player_per import PlayerPer
+from kornetkover.stats.models.player_per import PlayerPer
 
 class PlayerAnalysis(object):
     def __init__(self, player_index: str, date: datetime.date, yearly_avg_per: PlayerPer) -> None:

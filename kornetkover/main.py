@@ -4,7 +4,7 @@ from kornetkover.analysis.matchup_analysis_service import MatchupAnalysisService
 from kornetkover.analysis.prop_picker import PropPicker
 from kornetkover.tools.db import DB
 from kornetkover.odds.odds_service import OddsService
-from kornetkover.players.player_service import PlayerService
+from kornetkover.stats.services.player_service import PlayerService
 from kornetkover.tools.scraper import Scraper
 
 db = DB()

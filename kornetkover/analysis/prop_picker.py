@@ -5,8 +5,8 @@ from datetime import datetime
 from kornetkover.analysis.player_analysis import PlayerAnalysis
 from kornetkover.odds.odds_service import OddsService
 from kornetkover.odds.prop_line import PropLine
-from kornetkover.players.player_service import PlayerService
-from kornetkover.players.player import Player
+from kornetkover.stats.services.player_service import PlayerService
+from kornetkover.stats.models.player import Player
 from kornetkover.tools.db import DB
 
 

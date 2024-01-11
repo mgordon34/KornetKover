@@ -1,15 +1,13 @@
-from collections import defaultdict
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
-from statistics import mean
 from typing import List
 
 from kornetkover.tools.db import DB
-from kornetkover.stats.player_stat import PlayerStat
-from kornetkover.stats.player_per import PlayerPer
-from kornetkover.stats.pip_factor import PipFactor, RelationshipType
-from kornetkover.stats.utils import date_to_str, get_nba_year_from_date, str_to_date
+from kornetkover.stats.models.player_stat import PlayerStat
+from kornetkover.stats.models.player_per import PlayerPer
+from kornetkover.stats.models.pip_factor import PipFactor, RelationshipType
+from kornetkover.stats.utils import get_nba_year_from_date, str_to_date
 
 
 class PlayerStatService(object):

@@ -1,11 +1,11 @@
 from datetime import datetime
 
 from kornetkover.analysis.player_analysis import PlayerAnalysis
-from kornetkover.players.player_service import PlayerService
-from kornetkover.stats.pip_factor import PipFactor, RelationshipType
-from kornetkover.stats.player_per import PlayerPer
-from kornetkover.stats.player_stat import PlayerStat
-from kornetkover.stats.player_stat_service import PlayerStatService
+from kornetkover.stats.services.player_service import PlayerService
+from kornetkover.stats.models.pip_factor import PipFactor, RelationshipType
+from kornetkover.stats.models.player_per import PlayerPer
+from kornetkover.stats.models.player_stat import PlayerStat
+from kornetkover.stats.services.player_stat_service import PlayerStatService
 from kornetkover.stats.utils import get_nba_year_from_date, str_to_date
 from kornetkover.tools.db import DB
 

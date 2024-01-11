@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from kornetkover.players.player_service import PlayerService
+from kornetkover.stats.services.player_service import PlayerService
 from kornetkover.tools.db import DB
 from kornetkover.tools.scraper import Scraper
 from kornetkover.odds.prop_line import PropLine

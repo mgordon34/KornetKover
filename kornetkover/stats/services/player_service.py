@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from unidecode import unidecode
 
 from kornetkover.tools.db import DB
-from kornetkover.players.player import Player
+from kornetkover.stats.models.player import Player
 
 class PlayerService(object):
     def __init__(self, db: DB):
