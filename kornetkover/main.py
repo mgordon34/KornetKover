@@ -25,6 +25,7 @@ for game, roster in rosters.items():
     analyses += mas.analyze_player_matchups(roster["home"], roster["away"])
     print("-------------------------------------------------\n")
 
+    # Print out diffs between player predictions and player odds
     for analysis in analyses:
         player = ps.index_to_player(analysis.player_index)
         player_odds = os.get_player_odds(player.index, date)

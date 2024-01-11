@@ -1,13 +1,16 @@
+from collections import defaultdict
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from typing import List
 
 from kornetkover.tools.db import DB
+from kornetkover.stats.models.game import Game
+from kornetkover.stats.models.player import Player
 from kornetkover.stats.models.player_stat import PlayerStat
 from kornetkover.stats.models.player_per import PlayerPer
 from kornetkover.stats.models.pip_factor import PipFactor, RelationshipType
-from kornetkover.stats.utils import get_nba_year_from_date, str_to_date
+from kornetkover.stats.utils import get_nba_year_from_date
 
 
 class PlayerStatService(object):
@@ -103,6 +106,35 @@ class PlayerStatService(object):
             player_stats.append((PlayerStat(*game)))
 
         return player_stats
+
+    def get_games_for_date(self, date: datetime.date) -> List[Game]:
+        sql = f"""SELECT id, home_index, away_index, date, home_score, away_score
+                  FROM games
+                  WHERE date=Date('{date}')"""
+
+        res = self.db.execute_query(sql)
+
+        games = []
+        for game in res:
+            games.append(Game(*game))
+
+        return games
+
+    def get_player_stats_for_game(self, game: Game) -> dict:
+        sql = f"""SELECT pg.player_index, pl.name, pg.team_index, pg.minutes, pg.points, pg.rebounds, pg.assists
+                 FROM player_games pg
+                 LEFT JOIN games ga ON ga.id=pg.game
+                 LEFT JOIN players pl ON pl.index=pg.player_index
+                 WHERE ga.id={game.id}"""
+
+        res = self.db.execute_query(sql)
+
+        roster = defaultdict(list)
+        for player_stat in res:
+            player = Player(player_stat[0], player_stat[1])
+            roster[player_stat[2]].append((player, PlayerStat(*player_stat[3:])))
+
+        return roster
 
     def calc_pip_factor(
         self,
@@ -240,7 +272,7 @@ class PlayerStatService(object):
 
 if __name__ == "__main__":
     start_date = "2018-10-01"
-    end_date = "2023-12-03"
+    end_date = "2024-01-10"
     player_index = "jamesle01"
     defender_index = "embiijo01"
     frame = 5
@@ -249,16 +281,17 @@ if __name__ == "__main__":
     db.initialize_tables()
 
     pss = PlayerStatService(db, start_date, end_date)
-    # pss.calc_all_players_pip_factor(10, start_date, end_date, frame)
-    # stats = pss.calc_player_avgs_by_year('tatumja01', '2018-10-10', '2023-12-19')
-    # for year in stats:
-    #     player_per = stats[year]
-    #     print(f"{year} season: {player_per.points * player_per.minutes} PTS")
+    date = datetime.strptime(end_date, "%Y-%m-%d").date()
+    games = pss.get_games_for_date(date)
 
-    per_avgs = pss.calc_player_avgs_by_year(player_index, str_to_date(start_date), str_to_date(end_date))
-    [print(per_avgs[year].__dict__) for year in per_avgs]
-    games = pss.get_related_games(player_index, defender_index, False, start_date, end_date)
-    pip = pss.calc_pip_factor(player_index, defender_index, per_avgs, games)
-    print(pip.__dict__)
+    for game in games:
+        roster = pss.get_player_stats_for_game(game)
+        for team, players in roster.items():
+            print(f"player_stats for {team}--------------")
+            for player_dict in players:
+                player = player_dict["player"]
+                stats = player_dict["stats"]
+                print(f"{player.name} has {stats.minutes} mins, {stats.points} points, {stats.rebounds} rebounds, {stats.assists} assists")
+        print("\n")
 
     db.close()
