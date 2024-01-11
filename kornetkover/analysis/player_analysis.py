@@ -8,7 +8,6 @@ class PlayerAnalysis(object):
         self.date = date
         self.yearly_avg_per = yearly_avg_per
         self.pip_factors = []
-        self.notable_stats = []
         self.prediction = None
 
     def add_pip_factor(self, pip_factor):

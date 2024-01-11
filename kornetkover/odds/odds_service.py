@@ -62,6 +62,7 @@ class OddsService(object):
             index = player.index
             player_odds += self.to_player_odds(index, date, lines)
 
+        print(f"Updated odds for {len(prop_lines)} players")
         self.add_player_odds(player_odds)
 
 
