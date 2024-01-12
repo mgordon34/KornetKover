@@ -1,8 +1,10 @@
 import logging
 import traceback
 
-import psycopg2, psycopg2.extras
-from datetime import datetime
+import psycopg2
+import psycopg2.extras
+
+from kornetkover.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ class DB(object):
         try:
             conn = psycopg2.connect(
                 database="kornet_kover",
-                host="localhost",
+                host=config.db_hostname,
                 user="postgres",
                 password="password",
                 port="5432"
