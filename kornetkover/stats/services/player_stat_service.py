@@ -288,9 +288,7 @@ if __name__ == "__main__":
         roster = pss.get_player_stats_for_game(game)
         for team, players in roster.items():
             print(f"player_stats for {team}--------------")
-            for player_dict in players:
-                player = player_dict["player"]
-                stats = player_dict["stats"]
+            for (player, stats) in players:
                 print(f"{player.name} has {stats.minutes} mins, {stats.points} points, {stats.rebounds} rebounds, {stats.assists} assists")
         print("\n")
 
