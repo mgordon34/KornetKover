@@ -86,11 +86,13 @@ class Scraper(object):
             rebounds = _normalize_stat(basic_stats[i].find("td", {"data-stat": "trb"}).text)
             assists = _normalize_stat(basic_stats[i].find("td", {"data-stat": "ast"}).text)
             points = _normalize_stat(basic_stats[i].find("td", {"data-stat": "pts"}).text)
+            usg = _normalize_stat(advanced_stats[i].find("td", {"data-stat": "usg_pct"}).text)
             ortg = _normalize_stat(advanced_stats[i].find("td", {"data-stat": "off_rtg"}).text)
             drtg = _normalize_stat(advanced_stats[i].find("td", {"data-stat": "def_rtg"}).text)
 
             players.append((index, name))
-            player_games.append((index, game_id, team_index, minutes, points, rebounds, assists, ortg, drtg))
+            player_games.append((index, game_id, team_index, minutes, points,
+                                 rebounds, assists, usg, ortg, drtg))
 
         return (players, player_games)
 
@@ -121,19 +123,34 @@ class Scraper(object):
         url = "https://www.basketball-reference.com/teams/{}/2024.html"
         page = requests.get(url.format(team))
         soup = BeautifulSoup(page.content, "html.parser")
+
+        # Find players in active roster
+        active_roster_soup = soup.find(id="roster").find("tbody").find_all("tr")
+        active_roster = []
+        for player in active_roster_soup:
+            index = player.find("a")["href"].split("/")[3].split(".")[0]
+            active_roster.append(index)
+
         player_soup = soup.find(id="per_game").find("tbody").find_all("tr")
 
         players = {"starting": [], "bench": []}
         for player in player_soup:
             index = player.find("a")["href"].split("/")[3].split(".")[0]
+
+            if index in missing_players:
+                print(f"{index} is out for {team}")
+                continue
+
+            if index not in active_roster:
+                print(f"{index} is no longer active on {team}")
+                continue
+
             avg_min = cls._get_avg_minutes_from_player_tr(player)
-            if index not in missing_players:
+            if index not in missing_players and index in active_roster:
                 if avg_min > 20 and len(players["starting"]) <= 8:
                     players["starting"].append(index)
                 elif avg_min > 10:
                     players["bench"].append(index)
-            else:
-                print(f"{index} is OUT, skipping...")
 
         return players
 

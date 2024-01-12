@@ -65,6 +65,7 @@ class DB(object):
                 points INT NOT NULL,
                 rebounds INT NOT NULL,
                 assists INT NOT NULL,
+                usg REAL NOT NULL,
                 ortg INT NOT NULL,
                 drtg INT NOT NULL,
                 CONSTRAINT uq_player_games UNIQUE(player_index, game)
