@@ -156,7 +156,7 @@ class DB(object):
 
     def add_player_games(self, player_games):
         sql = """INSERT INTO player_games(player_index, game, team_index, minutes, points,
-                 rebounds, assists, ortg, drtg)
+                 rebounds, assists, usg, ortg, drtg)
                  VALUES %s
                  ON CONFLICT (player_index, game) DO NOTHING"""
 
