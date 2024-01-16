@@ -16,7 +16,7 @@ class DB(object):
         conn = None
         try:
             conn = psycopg2.connect(
-                database="kornet_kover",
+                database=config.db_name,
                 host=config.db_hostname,
                 user="postgres",
                 password="password",
