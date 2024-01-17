@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from typing import List
 
@@ -42,6 +42,7 @@ class PropOddsService(object):
 
 
     def get_odds_for_market(self, game_id: str, market: str) -> List[PropLine]:
+        print(f"getting odds for {game_id} for market {market}")
         endpoint = f"/beta/odds/{game_id}/{market}"
         ps = PlayerService(self.db)
 
@@ -50,11 +51,11 @@ class PropOddsService(object):
 
         player_lines = defaultdict(dict)
         for sportsbook in json_res["sportsbooks"]:
-            if sportsbook["bookie_key"] != "caesars":
+            if sportsbook["bookie_key"] != "pinnacle":
                 continue
 
             for outcome in sportsbook["market"]["outcomes"]:
-                player_name = " ".join(outcome["description"].split(" ")[:-2])
+                player_name = " ".join(outcome["description"].split(" ")[:-1]).replace("'", " ").replace("-", " ")
                 timestamp = datetime.strptime(outcome["timestamp"], "%Y-%m-%dT%H:%M:%S")
 
                 player = ps.name_to_player(player_name)
@@ -109,13 +110,24 @@ if __name__ == "__main__":
     db = DB()
     pos = PropOddsService(db)
 
-    date = datetime.strptime("2024-01-15", "%Y-%m-%d")
-    # game_ids = pos.get_game_ids_for_date(date)
-    # print(game_ids)
-    # markets = pos.get_markets_for_game(game_ids[0])
-    # print(markets)
-    lines = pos.get_odds_for_market("054c3a2b4085ee4c6b2ac933cd129d97", "player_points_over_under")
-    odds = pos.create_player_odds(lines, "points", date)
+    date = datetime.strptime("2023-11-02", "%Y-%m-%d")
+    end_date = datetime.strptime("2023-10-29", "%Y-%m-%d")
+    stats = {
+        "points": "player_points_over_under",
+        "rebounds": "player_rebounds_over_under",
+        "assists": "player_assists_over_under",
+     }
 
-    for odd in odds:
-        print(f"{odd.player_index}: {[line.to_db() for line in odd.prop_lines]}")
+    while date > end_date:
+        print(f"Getting odds for {date}")
+        game_ids = pos.get_game_ids_for_date(date)
+
+        for game_id in game_ids:
+            for stat, market in stats.items():
+                lines = pos.get_odds_for_market(game_id, market)
+                odds = pos.create_player_odds(lines, stat, date)
+
+                for odd in odds:
+                    print(f"{odd.player_index}: {[line.to_db() for line in odd.prop_lines]}")
+
+        date = date - timedelta(days=1)
