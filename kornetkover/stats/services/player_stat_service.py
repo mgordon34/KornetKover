@@ -136,6 +136,21 @@ class PlayerStatService(object):
 
         return roster
 
+    def get_player_stat_for_date(self, player_index: str, date: datetime.date) -> PlayerStat:
+        sql = f"""SELECT pg.minutes, pg.points, pg.rebounds, pg.assists
+                 FROM player_games pg
+                 LEFT JOIN games ga ON ga.id=pg.game
+                 LEFT JOIN players pl ON pl.index=pg.player_index
+                 WHERE pg.player_index='{player_index}' AND ga.date='{date}'"""
+
+        res = self.db.execute_query(sql)
+
+        if not res or not res[0]:
+            return None
+
+        return PlayerStat(*res[0])
+
+
     def calc_pip_factor(
         self,
         primary_index: str,
@@ -277,10 +292,11 @@ class PlayerStatService(object):
         game: Game,
     ) -> PlayerPer:
         roster_string = ",".join([f"'{p.index}'" for p in players])
+        year = get_nba_year_from_date(game.date)
         sql = f"""SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.rebounds), AVG(pg.assists)
                       FROM player_games pg
                       LEFT JOIN games gg ON gg.id = pg.game
-                      WHERE pg.player_index='{player.index}' AND gg.date<'{game.date}'
+                      WHERE pg.player_index='{player.index}' AND gg.date>'{year}-10-10' AND gg.date<'{game.date}'
                       AND (
                           SELECT COUNT(*) FROM games ga
                           LEFT JOIN player_games pg ON pg.game=ga.id
@@ -288,7 +304,7 @@ class PlayerStatService(object):
                       ) = {len(players)};"""
 
         res = self.db.execute_query(sql)
-        if not res or not res[0]:
+        if not res or not res[0][1]:
             return None
 
         return self.create_player_per(1, *res[0])

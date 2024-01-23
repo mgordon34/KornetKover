@@ -122,7 +122,7 @@ class MatchupAnalysisService(object):
         return all_player_analyses
 
     def pick_base_stats(self, roster_stats: PlayerPer, yearly_stats: PlayerPer) -> Optional[PlayerPer]:
-        if roster_stats.num_games > 2:
+        if roster_stats and roster_stats.num_games > 2:
             return roster_stats
 
         if yearly_stats.num_games > 4:
@@ -140,13 +140,6 @@ class MatchupAnalysisService(object):
         date: datetime.date,
     ) -> PlayerAnalysis:
         player_analysis = PlayerAnalysis(player.index, date, base_stats)
-        print("----------analyzing matchups for {}: MIN[{}], PTS[{}], REB[{}], AST[{}]----------".format(
-            player.name,
-            round(base_stats.minutes, 2),
-            round(base_stats.points * base_stats.minutes, 2),
-            round(base_stats.rebounds * base_stats.minutes, 2),
-            round(base_stats.assists * base_stats.minutes, 2),
-        ))
 
         for matchup in defenders:
             related_games = self.pss.get_related_games(player.index, matchup.index, RelationshipType.OPPONENT, self.start_date, date)
@@ -158,13 +151,6 @@ class MatchupAnalysisService(object):
             player_analysis.add_pip_factor(pip_factor)
 
         player_analysis.prediction = self.predict_stats(player_analysis.pip_factors, base_stats)
-
-        print("Predicted stats: MIN[{}], PTS[{}], REB[{}], AST[{}]".format(
-            player_analysis.prediction.minutes,
-            player_analysis.prediction.points,
-            player_analysis.prediction.rebounds,
-            player_analysis.prediction.assists,
-        ))
 
         return player_analysis
 

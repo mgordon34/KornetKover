@@ -26,11 +26,13 @@ class PropPicker(object):
         os = OddsService(db)
 
         best_props = []
+        print(len(analyses))
         for analysis in analyses:
             player = self.ps.index_to_player(analysis.player_index)
             player_odds = os.get_player_odds(player.index, date)
 
             if not player_odds:
+                print(f"no player odds for {player.name}")
                 continue
 
             prop_lines = player_odds.prop_lines
