@@ -30,7 +30,7 @@ class Backtester(object):
         }
         for (player, prop_lines) in best_props:
             best_prop = prop_lines[0]
-            if abs(best_prop.predicted_delta) > 3:
+            if abs(best_prop.predicted_delta) > 5:
 
                 player_performance = self.pss.get_player_stat_for_date(player.index, date)
                 stat_total = self.calculate_performance(player_performance, best_prop)
@@ -78,7 +78,4 @@ if __name__ == "__main__":
     print("=======Total========")
     print(f"WINS: {wins}, LOSSES: {losses}")
     print(f"Estimated Profit: {wins*8 - losses*10}")
-
-
-    bt.backtest_date(date)
 

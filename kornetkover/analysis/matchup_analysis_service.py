@@ -126,7 +126,6 @@ class MatchupAnalysisService(object):
             return roster_stats
 
         if yearly_stats.num_games > 4:
-            print("Using yearly stats")
             return yearly_stats
 
         return None
