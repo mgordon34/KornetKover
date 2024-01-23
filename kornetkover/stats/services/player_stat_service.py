@@ -50,7 +50,7 @@ class PlayerStatService(object):
 
         while cur_date < end_date:
             cur_year = str(cur_date.year)
-            next_date = cur_date + relativedelta(years=1)
+            next_date = min(cur_date + relativedelta(years=1), end_date)
 
             player_avgs[cur_year] = self.calc_player_avgs(player_index, cur_date.strftime("%Y-%m-%d"), next_date.strftime("%Y-%m-%d"), 1)
             cur_date = next_date
@@ -268,6 +268,30 @@ class PlayerStatService(object):
 
             count = self.db.add_pip_factors(pip_factors)
             print(f"{count} pip_factors added for player {player}")
+
+    def calc_stats_with_roster(
+        self,
+        player: Player,
+        team_index: str,
+        players: List[Player],
+        game: Game,
+    ) -> PlayerPer:
+        roster_string = ",".join([f"'{p.index}'" for p in players])
+        sql = f"""SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.rebounds), AVG(pg.assists)
+                      FROM player_games pg
+                      LEFT JOIN games gg ON gg.id = pg.game
+                      WHERE pg.player_index='{player.index}' AND gg.date<'{game.date}'
+                      AND (
+                          SELECT COUNT(*) FROM games ga
+                          LEFT JOIN player_games pg ON pg.game=ga.id
+                          WHERE ga.id=gg.id AND pg.player_index IN ({roster_string}) AND pg.team_index='{team_index}'
+                      ) = {len(players)};"""
+
+        res = self.db.execute_query(sql)
+        if not res or not res[0]:
+            return None
+
+        return self.create_player_per(1, *res[0])
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
+from typing import List
 from unidecode import unidecode
 
 from kornetkover.tools.db import DB
 from kornetkover.stats.models.player import Player
+from kornetkover.stats.models.game import Game
 
 class PlayerService(object):
     def __init__(self, db: DB):
@@ -43,6 +45,20 @@ class PlayerService(object):
             return datetime.strptime("2017-10-10", "%Y-%m-%d").date()
 
         return res[0][0] + timedelta(days=1)
+
+    def find_roster_for_game(self, game_id, team: str) -> List[Player]:
+        sql = f"""SELECT pl.index, pl.name, pg.team_index FROM players pl
+                 LEFT JOIN player_games pg ON pg.player_index=pl.index
+                 LEFT JOIN games gg ON gg.id=pg.game
+                 WHERE gg.id={game_id} AND pg.team_index='{team}'
+                 ORDER BY pg.minutes DESC
+                 LIMIT 8"""
+
+        res = self.db.execute_query(sql)
+        if not res or not res[0]:
+            return None
+
+        return [ Player(*player) for player in res ] 
 
     @classmethod
     def normalize_player_name(cls, name: str) -> str:

@@ -1,7 +1,10 @@
 from datetime import datetime
+from typing import List, Optional
 
 from kornetkover.analysis.player_analysis import PlayerAnalysis
 from kornetkover.stats.services.player_service import PlayerService
+from kornetkover.stats.models.game import Game
+from kornetkover.stats.models.player import Player
 from kornetkover.stats.models.pip_factor import PipFactor, RelationshipType
 from kornetkover.stats.models.player_per import PlayerPer
 from kornetkover.stats.models.player_stat import PlayerStat
@@ -95,7 +98,76 @@ class MatchupAnalysisService(object):
 
         return player_analyses
 
-            
+    def get_player_analyses_per_team(
+        self,
+        game: Game,
+        team_index: str,
+        players: List[Player],
+        defenders: List[Player],
+    ) -> List[PlayerAnalysis]:
+        all_player_analyses = []
+
+        for player in players:
+            yearly_base_stats = self.pss.calc_player_avgs_by_year(player.index, str_to_date(self.start_date), game.date)
+            current_stats = yearly_base_stats[get_nba_year_from_date(game.date)]
+            stats_with_roster = self.pss.calc_stats_with_roster(player, team_index, players, game)
+
+            base_stats = self.pick_base_stats(stats_with_roster, current_stats)
+            if not base_stats:
+                print(f"skipping analysis for {player.name}, no base stats")
+                continue
+
+            all_player_analyses.append(self.run_pip_analysis(player, base_stats, yearly_base_stats, defenders, game.date))
+
+        return all_player_analyses
+
+    def pick_base_stats(self, roster_stats: PlayerPer, yearly_stats: PlayerPer) -> Optional[PlayerPer]:
+        if roster_stats.num_games > 2:
+            return roster_stats
+
+        if yearly_stats.num_games > 4:
+            print("Using yearly stats")
+            return yearly_stats
+
+        return None
+
+    def run_pip_analysis(
+        self,
+        player: Player,
+        base_stats: PlayerPer,
+        all_stats: dict[PlayerPer],
+        defenders,
+        date: datetime.date,
+    ) -> PlayerAnalysis:
+        player_analysis = PlayerAnalysis(player.index, date, base_stats)
+        print("----------analyzing matchups for {}: MIN[{}], PTS[{}], REB[{}], AST[{}]----------".format(
+            player.name,
+            round(base_stats.minutes, 2),
+            round(base_stats.points * base_stats.minutes, 2),
+            round(base_stats.rebounds * base_stats.minutes, 2),
+            round(base_stats.assists * base_stats.minutes, 2),
+        ))
+
+        for matchup in defenders:
+            related_games = self.pss.get_related_games(player.index, matchup.index, RelationshipType.OPPONENT, self.start_date, date)
+            pip_factor = self.pss.calc_pip_factor(player.index, matchup.index, RelationshipType.OPPONENT, all_stats, related_games)
+
+            if not pip_factor:
+                continue
+
+            player_analysis.add_pip_factor(pip_factor)
+
+        player_analysis.prediction = self.predict_stats(player_analysis.pip_factors, base_stats)
+
+        print("Predicted stats: MIN[{}], PTS[{}], REB[{}], AST[{}]".format(
+            player_analysis.prediction.minutes,
+            player_analysis.prediction.points,
+            player_analysis.prediction.rebounds,
+            player_analysis.prediction.assists,
+        ))
+
+        return player_analysis
+
 
     def find_notable_stats(self, pip_factor: PipFactor, p_threshold: int):
         stats = ["minutes", "points", "rebounds", "assists"]
@@ -112,7 +184,7 @@ class MatchupAnalysisService(object):
         predicted_value = current_value + (current_value * pchange/100)
         return round(predicted_value, 2)
 
-    def predict_stats(self, pip_factors: list[PipFactor], player_avgs: PlayerPer) -> PlayerStat:
+    def predict_stats(self, pip_factors: list[PipFactor], base_stats: PlayerPer) -> PlayerStat:
         predicted_stats = {
             "minutes": 0,
             "points": 0,
@@ -122,12 +194,12 @@ class MatchupAnalysisService(object):
         count = 0
         for pip_factor in pip_factors:
             for stat in predicted_stats:
-                yearly_stat = getattr(player_avgs, stat)
+                base_stat = getattr(base_stats, stat)
                 stat_pchange = getattr(pip_factor, stat)
                 if stat == "minutes":
-                    predicted_stat = self.get_predicted_value(yearly_stat, stat_pchange)
+                    predicted_stat = self.get_predicted_value(base_stat, stat_pchange)
                 else:
-                    predicted_stat = self.get_predicted_value(yearly_stat, stat_pchange) * player_avgs.minutes
+                    predicted_stat = self.get_predicted_value(base_stat, stat_pchange) * base_stats.minutes
                 
                 predicted_stats[stat] = (predicted_stats[stat] * count + predicted_stat * pip_factor.num_games) / float(count + pip_factor.num_games)
             count = count + pip_factor.num_games
