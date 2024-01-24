@@ -28,25 +28,25 @@ class Backtester(object):
             "wins": 0,
             "losses": 0,
         }
-        for (player, prop_lines) in best_props:
-            best_prop = prop_lines[0]
-            if abs(best_prop.predicted_delta) > 3:
+        for best_stat_props in best_props:
+            for (player, best_prop) in best_stat_props:
                 side = "over" if best_prop.predicted_delta > 0 else "under"
-                print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}")
+                print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}[{best_prop.predicted_delta}]")
 
                 player_performance = self.pss.get_player_stat_for_date(player.index, date)
                 stat_total = self.calculate_performance(player_performance, best_prop)
 
-                if best_prop.predicted_delta > 0:
-                    if stat_total > best_prop.line:
-                        record["wins"] += 1
+                if player_performance.minutes:
+                    if best_prop.predicted_delta > 0:
+                        if stat_total > best_prop.line:
+                            record["wins"] += 1
+                        else:
+                            record["losses"] += 1
                     else:
-                        record["losses"] += 1
-                else:
-                    if stat_total < best_prop.line:
-                        record["wins"] += 1
-                    else:
-                        record["losses"] += 1
+                        if stat_total < best_prop.line:
+                            record["wins"] += 1
+                        else:
+                            record["losses"] += 1
 
         print(f"{record['wins']} - {record['losses']}")
         return(record["wins"], record["losses"])
@@ -65,8 +65,10 @@ if __name__ == "__main__":
     db = DB()
     bt = Backtester(db)
 
-    date = datetime.strptime("2024-01-01", "%Y-%m-%d")
-    end_date = datetime.strptime("2024-01-21", "%Y-%m-%d")
+    date = datetime.strptime("2023-12-01", "%Y-%m-%d")
+    # date = datetime.strptime("2024-01-01", "%Y-%m-%d")
+    end_date = datetime.strptime("2023-12-31", "%Y-%m-%d")
+    # end_date = datetime.strptime("2024-01-21", "%Y-%m-%d")
 
     wins = 0
     losses = 0

@@ -139,6 +139,7 @@ class MatchupAnalysisService(object):
         date: datetime.date,
     ) -> PlayerAnalysis:
         player_analysis = PlayerAnalysis(player.index, date, base_stats)
+        current_stats = all_stats[get_nba_year_from_date(date)]
 
         for matchup in defenders:
             related_games = self.pss.get_related_games(player.index, matchup.index, RelationshipType.OPPONENT, self.start_date, date)
@@ -150,7 +151,7 @@ class MatchupAnalysisService(object):
             player_analysis.add_pip_factor(pip_factor)
 
         player_analysis.prediction = self.predict_stats_historical(player_analysis.pip_factors, base_stats)
-        player_analysis.outliers = self.find_outlying_stats(player_analysis.prediction, base_stats)
+        player_analysis.outliers = self.find_outlying_stats(player_analysis.prediction, current_stats)
         for outlier in player_analysis.outliers:
             if outlier == "minutes":
                 continue
@@ -251,5 +252,5 @@ class MatchupAnalysisService(object):
             stat_pchange = (stat_diff / yearly_avg_stat) * 100
             if abs(stat_diff) > 1 and abs(stat_pchange) > 10:
                 outliers[stat] = stat_diff
-        
+
         return outliers

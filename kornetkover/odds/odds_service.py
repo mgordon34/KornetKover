@@ -48,6 +48,24 @@ class OddsService(object):
 
         return player_odds
 
+
+    def get_specific_player_odds(self, player_index: str, stats: List[str], date: datetime.date):
+        stats_string = ",".join([f"'{stat}'" for stat in stats])
+        sql = f"""SELECT player_index, date, stat, line, over_odds, under_odds
+                 FROM player_odds
+                 WHERE player_index='{player_index}' AND stat IN ({stats_string}) AND date='{date}'"""
+
+        res = self.db.execute_query(sql)
+
+        if not res:
+            return None
+
+        player_odds = PlayerOdds(player_index, date)
+        for line in res:
+            player_odds.add_prop_line(PropLine(*line[2:]))
+
+        return player_odds
+
     def update_player_odds_for_date(self, date: datetime.date):
         ps = PlayerService(self.db)
         prop_lines = Scraper.get_prop_lines(date)

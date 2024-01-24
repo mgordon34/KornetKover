@@ -9,12 +9,16 @@ from kornetkover.stats.services.player_service import PlayerService
 from kornetkover.stats.models.player import Player
 from kornetkover.tools.db import DB
 
-
 class PropPicker(object):
     props = []
 
     def __init__(self, player_service: PlayerService) -> None:
         self.ps = player_service
+        self.stat_thresholds = {
+            "points": 5,
+            "rebounds": 1.5,
+            "assists": 1.5,
+        }
         return
 
     def pick_props(
@@ -57,39 +61,27 @@ class PropPicker(object):
         db = DB()
         os = OddsService(db)
 
-        best_props = []
+        best_props = {
+            "points": [],
+            "rebounds": [],
+            "assists": [],
+        }
         for analysis in analyses:
             player = self.ps.index_to_player(analysis.player_index)
-            player_odds = os.get_player_odds(player.index, date)
+            player_odds = os.get_specific_player_odds(player.index, self.stat_thresholds.keys(), date)
 
             if not player_odds:
                 continue
 
             prop_lines = player_odds.prop_lines
             for prop_line in prop_lines:
-                prop_line.predicted_delta = 0
-                stats = prop_line.stat.split("-")
-                cumulative_stat = 0
+                prop_line.predicted_delta = getattr(analysis.prediction, prop_line.stat) - prop_line.line
 
-                should_use = True
-                for stat in stats:
-                    if stat not in analysis.outliers:
-                        should_use = False
+                if (abs(prop_line.predicted_delta) > self.stat_thresholds[prop_line.stat]
+                        and prop_line.stat in analysis.outliers):
+                    best_props[prop_line.stat].append((player, prop_line))
 
-                    cumulative_stat += getattr(analysis.prediction, stat)
-
-                if should_use:
-                    side = (analysis.outliers[stats[0]] > 0)
-                    for stat in stats:
-                        if side != (analysis.outliers[stat] > 0):
-                            should_use = False
-
-                if should_use:
-                    prop_line.predicted_delta = cumulative_stat - prop_line.line
-
-            prop_lines.sort(key=lambda item: abs(item.predicted_delta), reverse=True)
-            best_props.append((player, prop_lines))
-
-        best_props.sort(key=lambda item: item[1][0].predicted_delta, reverse=True)
+        for stat in best_props:
+            best_props[stat].sort(key=lambda item: abs(item[1].predicted_delta), reverse=True)
+        return [props[:6] for props in best_props.values()]
         return best_props
-        return best_props[:3] + best_props[-3:]

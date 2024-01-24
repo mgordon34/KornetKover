@@ -193,6 +193,10 @@ class PlayerStatService(object):
         avg_assists: Decimal,
     ) -> PlayerPer:
         avg_minutes = float(avg_minutes)
+
+        if not avg_minutes:
+            return None
+
         points_per = float(avg_points) / avg_minutes
         rebounds_per = float(avg_rebounds) / avg_minutes
         assists_per = float(avg_assists) / avg_minutes
