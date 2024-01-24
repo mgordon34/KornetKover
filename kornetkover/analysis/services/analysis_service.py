@@ -14,13 +14,11 @@ class AnalysisRunner(object):
 
     def run_analysis(self, date: datetime.date):
         # TODO: Here is where we can specify a strategy to run in the future
+        all_player_analyses = []
 
         games = self.gs.get_games_for_date(date)
 
-        all_player_analyses = []
         for game in games:
-            print(f"running analysis for {game.away_index} vs {game.home_index}")
-
             away_roster = self.ps.find_roster_for_game(game.id, game.away_index)
             home_roster = self.ps.find_roster_for_game(game.id, game.home_index)
 

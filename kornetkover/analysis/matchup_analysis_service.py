@@ -110,22 +110,22 @@ class MatchupAnalysisService(object):
         for player in players:
             yearly_base_stats = self.pss.calc_player_avgs_by_year(player.index, str_to_date(self.start_date), game.date)
             current_stats = yearly_base_stats[get_nba_year_from_date(game.date)]
-            stats_with_roster = self.pss.calc_stats_with_roster(player, team_index, players, game)
+            stats_with_roster = self.pss.calc_stats_with_roster(player, team_index, players[:5], game)
 
             base_stats = self.pick_base_stats(stats_with_roster, current_stats)
             if not base_stats:
                 print(f"skipping analysis for {player.name}, no base stats")
                 continue
 
-            all_player_analyses.append(self.run_pip_analysis(player, base_stats, yearly_base_stats, defenders, game.date))
+            all_player_analyses.append(self.run_pip_analysis(player, base_stats, yearly_base_stats, defenders[:5], game.date))
 
         return all_player_analyses
 
     def pick_base_stats(self, roster_stats: PlayerPer, yearly_stats: PlayerPer) -> Optional[PlayerPer]:
-        if roster_stats and roster_stats.num_games > 2:
+        if roster_stats and roster_stats.num_games > 4:
             return roster_stats
 
-        if yearly_stats.num_games > 4:
+        if yearly_stats and yearly_stats.num_games > 4:
             return yearly_stats
 
         return None
@@ -149,7 +149,12 @@ class MatchupAnalysisService(object):
 
             player_analysis.add_pip_factor(pip_factor)
 
-        player_analysis.prediction = self.predict_stats(player_analysis.pip_factors, base_stats)
+        player_analysis.prediction = self.predict_stats_historical(player_analysis.pip_factors, base_stats)
+        player_analysis.outliers = self.find_outlying_stats(player_analysis.prediction, base_stats)
+        for outlier in player_analysis.outliers:
+            if outlier == "minutes":
+                continue
+            # print(f"outlier in {outlier} for {player.name}: {player_analysis.outliers[outlier]}")
 
         return player_analysis
 
@@ -168,6 +173,42 @@ class MatchupAnalysisService(object):
     def get_predicted_value(self, current_value: float, pchange: float) -> float:
         predicted_value = current_value + (current_value * pchange/100)
         return round(predicted_value, 2)
+
+    def predict_stats_historical(self, pip_factors: list[PipFactor], base_stats: PlayerPer) -> PlayerStat:
+        predicted_stats = {
+            "minutes": 0,
+            "points": 0,
+            "rebounds": 0,
+            "assists": 0,
+        }
+        count = 0
+        for pip_factor in pip_factors:
+            for stat in predicted_stats:
+                base_stat = getattr(base_stats, stat)
+                stat_pchange = getattr(pip_factor, stat)
+                if stat == "minutes":
+                    predicted_stat = self.get_predicted_value(base_stat, stat_pchange)
+                else:
+                    predicted_stat = self.get_predicted_value(base_stat, stat_pchange) * base_stats.minutes
+                
+                predicted_stats[stat] = (predicted_stats[stat] * count + predicted_stat * pip_factor.num_games) / float(count + pip_factor.num_games)
+            count = count + pip_factor.num_games
+        
+        if count > 24:
+            return PlayerStat(
+                round(predicted_stats["minutes"], 2),
+                round(predicted_stats["points"], 2),
+                round(predicted_stats["rebounds"], 2),
+                round(predicted_stats["assists"], 2),
+            )
+        else:
+            return PlayerStat(
+                round(base_stats.minutes, 2),
+                round(base_stats.points * base_stats.minutes, 2),
+                round(base_stats.rebounds * base_stats.minutes, 2),
+                round(base_stats.assists * base_stats.minutes, 2),
+            )
+
 
     def predict_stats(self, pip_factors: list[PipFactor], base_stats: PlayerPer) -> PlayerStat:
         predicted_stats = {
@@ -203,9 +244,12 @@ class MatchupAnalysisService(object):
             predicted_stat = getattr(predicted_stats, stat)
             yearly_avg_stat = getattr(yearly_stats, stat) * yearly_stats.minutes if stat != "minutes" else getattr(yearly_stats, stat)
 
+            if not yearly_avg_stat:
+                continue
+
             stat_diff = predicted_stat - yearly_avg_stat
             stat_pchange = (stat_diff / yearly_avg_stat) * 100
             if abs(stat_diff) > 1 and abs(stat_pchange) > 10:
-                outliers[stat] = predicted_stat
+                outliers[stat] = stat_diff
         
         return outliers

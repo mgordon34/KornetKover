@@ -9,6 +9,7 @@ class PlayerAnalysis(object):
         self.yearly_avg_per = yearly_avg_per
         self.pip_factors = []
         self.prediction = None
+        self.outliers = []
 
     def add_pip_factor(self, pip_factor):
         self.pip_factors.append(pip_factor)

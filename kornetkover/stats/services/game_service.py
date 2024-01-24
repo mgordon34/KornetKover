@@ -14,8 +14,8 @@ class GameService(object):
                  WHERE date=Date('{date}')"""
 
         res = self.db.execute_query(sql)
-        if not res or not res[0]:
-            return None
+        if not res:
+            return []
 
         games = []
         for game in res:

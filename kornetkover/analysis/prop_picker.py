@@ -48,3 +48,48 @@ class PropPicker(object):
 
         best_props.sort(key=lambda item: item[1][0].predicted_delta, reverse=True)
         return best_props[:10] + best_props[-10:]
+
+    def pick_props_historical(
+        self,
+        analyses: List[PlayerAnalysis],
+        date: datetime.date,
+    ) -> List[tuple[Player, List[PropLine]]]:
+        db = DB()
+        os = OddsService(db)
+
+        best_props = []
+        for analysis in analyses:
+            player = self.ps.index_to_player(analysis.player_index)
+            player_odds = os.get_player_odds(player.index, date)
+
+            if not player_odds:
+                continue
+
+            prop_lines = player_odds.prop_lines
+            for prop_line in prop_lines:
+                prop_line.predicted_delta = 0
+                stats = prop_line.stat.split("-")
+                cumulative_stat = 0
+
+                should_use = True
+                for stat in stats:
+                    if stat not in analysis.outliers:
+                        should_use = False
+
+                    cumulative_stat += getattr(analysis.prediction, stat)
+
+                if should_use:
+                    side = (analysis.outliers[stats[0]] > 0)
+                    for stat in stats:
+                        if side != (analysis.outliers[stat] > 0):
+                            should_use = False
+
+                if should_use:
+                    prop_line.predicted_delta = cumulative_stat - prop_line.line
+
+            prop_lines.sort(key=lambda item: abs(item.predicted_delta), reverse=True)
+            best_props.append((player, prop_lines))
+
+        best_props.sort(key=lambda item: item[1][0].predicted_delta, reverse=True)
+        return best_props
+        return best_props[:3] + best_props[-3:]

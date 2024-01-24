@@ -22,7 +22,7 @@ class Backtester(object):
         print(f"backtesting for {date}")
         all_player_analyses = self.ar.run_analysis(date)
 
-        best_props = self.pp.pick_props(all_player_analyses, date)
+        best_props = self.pp.pick_props_historical(all_player_analyses, date)
 
         record = {
             "wins": 0,
@@ -30,7 +30,9 @@ class Backtester(object):
         }
         for (player, prop_lines) in best_props:
             best_prop = prop_lines[0]
-            if abs(best_prop.predicted_delta) > 5:
+            if abs(best_prop.predicted_delta) > 3:
+                side = "over" if best_prop.predicted_delta > 0 else "under"
+                print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}")
 
                 player_performance = self.pss.get_player_stat_for_date(player.index, date)
                 stat_total = self.calculate_performance(player_performance, best_prop)
@@ -51,7 +53,6 @@ class Backtester(object):
 
     def calculate_performance(self, player_performance: PlayerStat, prop_line: PropLine) -> int:
         stats = prop_line.stat.split("-")
-        print(stats)
 
         performance = 0
         for stat in stats:
@@ -77,5 +78,4 @@ if __name__ == "__main__":
 
     print("=======Total========")
     print(f"WINS: {wins}, LOSSES: {losses}")
-    print(f"Estimated Profit: {wins*8 - losses*10}")
-
+    print(f"Estimated Profit: {wins*9 - losses*10}")

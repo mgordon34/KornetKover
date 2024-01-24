@@ -306,7 +306,7 @@ class PlayerStatService(object):
         res = self.db.execute_query(sql)
         if not res or not res[0][1]:
             return None
-
+        
         return self.create_player_per(1, *res[0])
 
 
