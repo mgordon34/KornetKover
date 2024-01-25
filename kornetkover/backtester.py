@@ -59,7 +59,8 @@ class Backtester(object):
                             record["losses"] += 1
 
         print(f"{record['wins']} - {record['losses']}")
-        return(record["wins"], record["losses"])
+        print(f"total: {record['total']}")
+        return(record["wins"], record["losses"], record["total"])
 
     def calculate_return(self, odds, bet_size):
         if odds < 0:
@@ -91,12 +92,12 @@ if __name__ == "__main__":
     losses = 0
     total = 0
     while date <= end_date:
-        (date_wins, date_losses) = bt.backtest_date(date)
+        (date_wins, date_losses, date_total) = bt.backtest_date(date)
         wins += date_wins
         losses += date_losses
-        total += total
+        total += date_total
         date = date + timedelta(days=1)
 
     print("=======Total========")
     print(f"WINS: {wins}, LOSSES: {losses}")
-    print(f"Estimated Profit: {total}")
+    print(f"Estimated Profit: ${total:,.2f}")

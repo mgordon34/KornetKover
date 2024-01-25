@@ -77,6 +77,11 @@ class PropPicker(object):
             for prop_line in prop_lines:
                 prop_line.predicted_delta = getattr(analysis.prediction, prop_line.stat) - prop_line.line
 
+                if prop_line.predicted_delta < 0 and prop_line.under_odds < -140:
+                    continue
+                if prop_line.predicted_delta > 0 and prop_line.over_odds < -140:
+                    continue
+
                 if (abs(prop_line.predicted_delta) > self.stat_thresholds[prop_line.stat]
                         and prop_line.stat in analysis.outliers):
                     best_props[prop_line.stat].append((player, prop_line))
