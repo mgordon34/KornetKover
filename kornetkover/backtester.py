@@ -89,12 +89,14 @@ if __name__ == "__main__":
 
     wins = 0
     losses = 0
+    total = 0
     while date <= end_date:
         (date_wins, date_losses) = bt.backtest_date(date)
         wins += date_wins
         losses += date_losses
+        total += total
         date = date + timedelta(days=1)
 
     print("=======Total========")
     print(f"WINS: {wins}, LOSSES: {losses}")
-    print(f"Estimated Profit: {wins*9 - losses*10}")
+    print(f"Estimated Profit: {total}")
