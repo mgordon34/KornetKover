@@ -27,11 +27,13 @@ class Backtester(object):
         record = {
             "wins": 0,
             "losses": 0,
+            "total": 0,
         }
-        for best_stat_props in best_props:
+        bet_size = 100
+        for best_stat_props in best_props[1:]:
             for (player, best_prop) in best_stat_props:
                 side = "over" if best_prop.predicted_delta > 0 else "under"
-                print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}[{best_prop.predicted_delta}]")
+                print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}[{best_prop.predicted_delta}] at {getattr(best_prop, side+'_odds')}")
 
                 player_performance = self.pss.get_player_stat_for_date(player.index, date)
                 stat_total = self.calculate_performance(player_performance, best_prop)
@@ -39,17 +41,33 @@ class Backtester(object):
                 if player_performance.minutes:
                     if best_prop.predicted_delta > 0:
                         if stat_total > best_prop.line:
+                            winnings = self.calculate_return(best_prop.over_odds, bet_size)
+                            record["total"] += winnings
                             record["wins"] += 1
+                            print(f"won {winnings}")
                         else:
+                            record["total"] -= bet_size
                             record["losses"] += 1
                     else:
                         if stat_total < best_prop.line:
+                            winnings = self.calculate_return(best_prop.under_odds, bet_size)
+                            record["total"] += winnings
                             record["wins"] += 1
+                            print(f"won {winnings}")
                         else:
+                            record["total"] -= bet_size
                             record["losses"] += 1
 
         print(f"{record['wins']} - {record['losses']}")
         return(record["wins"], record["losses"])
+
+    def calculate_return(self, odds, bet_size):
+        if odds < 0:
+            odds = abs(odds)
+            return odds/(odds+100)*bet_size
+        else:
+            return (1+100/(odds+100))*bet_size
+
 
     def calculate_performance(self, player_performance: PlayerStat, prop_line: PropLine) -> int:
         stats = prop_line.stat.split("-")
