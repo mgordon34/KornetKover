@@ -63,10 +63,9 @@ class Backtester(object):
 
     def calculate_return(self, odds, bet_size):
         if odds < 0:
-            odds = abs(odds)
-            return odds/(odds+100)*bet_size
+            return 100 / abs(odds) * bet_size
         else:
-            return (1+100/(odds+100))*bet_size
+            return odds / 100 * bet_size
 
 
     def calculate_performance(self, player_performance: PlayerStat, prop_line: PropLine) -> int:
