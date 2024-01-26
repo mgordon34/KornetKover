@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 from unidecode import unidecode
 
 from kornetkover.tools.db import DB
+from kornetkover.tools.scraper import Scraper
 from kornetkover.stats.models.player import Player
 from kornetkover.stats.models.game import Game
 
@@ -32,7 +33,6 @@ class PlayerService(object):
         player = res[0]
         return Player(player[0], player[1])
 
-
     def find_date_on_active_team(self, player_index: str, team: str) -> datetime.date:
         sql = """SELECT gg.date
                  FROM player_games pg
@@ -46,11 +46,28 @@ class PlayerService(object):
 
         return res[0][0] + timedelta(days=1)
 
-    def find_roster_for_game(self, game_id, team: str) -> List[Player]:
+    def get_missing_player_indexes(self, date: datetime.date) -> List[str]:
+        if date != datetime.now().date():
+            return []
+        return Scraper().get_missing_players()
+
+    def find_roster_for_team(
+        self,
+        game: Game,
+        team: str,
+        missing_player_indexes: List[str]
+    ) -> List[Player]:
+        if game.date == datetime.now().date():
+            players = Scraper.scrape_playing_players(team, missing_player_indexes)
+            return [self.index_to_player(player) for player in players]
+
+        return self.get_roster_from_db(game.id, team)
+        
+    def get_roster_from_db(self, game_id: int, team_index: str) -> List[Player]:
         sql = f"""SELECT pl.index, pl.name, pg.team_index FROM players pl
                  LEFT JOIN player_games pg ON pg.player_index=pl.index
                  LEFT JOIN games gg ON gg.id=pg.game
-                 WHERE gg.id={game_id} AND pg.team_index='{team}'
+                 WHERE gg.id={game_id} AND pg.team_index='{team_index}'
                  ORDER BY pg.minutes DESC
                  LIMIT 8"""
 

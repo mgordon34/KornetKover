@@ -111,11 +111,14 @@ class MatchupAnalysisService(object):
             yearly_base_stats = self.pss.calc_player_avgs_by_year(player.index, str_to_date(self.start_date), game.date)
             current_stats = yearly_base_stats[get_nba_year_from_date(game.date)]
             stats_with_roster = self.pss.calc_stats_with_roster(player, team_index, players[:5], game)
+            # print(f"----{player.name}----")
+            # print(f"Yearly stats: MIN[{round(current_stats.minutes, 2)}] PTS[{round(current_stats.points*current_stats.minutes, 2)}] REB[{round(current_stats.rebounds*current_stats.minutes, 2)}] AST[{round(current_stats.assists*current_stats.minutes, 2)}]")
 
             base_stats = self.pick_base_stats(stats_with_roster, current_stats)
             if not base_stats:
                 print(f"skipping analysis for {player.name}, no base stats")
                 continue
+            # print(f"Roster stats: MIN[{round(base_stats.minutes, 2)}] PTS[{round(base_stats.points*current_stats.minutes, 2)}] REB[{round(base_stats.rebounds*current_stats.minutes, 2)}] AST[{round(base_stats.assists*current_stats.minutes, 2)}]")
 
             all_player_analyses.append(self.run_pip_analysis(player, base_stats, yearly_base_stats, defenders[:5], game.date))
 

@@ -25,42 +25,59 @@ class Backtester(object):
         best_props = self.pp.pick_props_historical(all_player_analyses, date)
 
         record = {
-            "wins": 0,
-            "losses": 0,
-            "total": 0,
+            "points": {
+                "wins": 0,
+                "losses": 0,
+                "total": 0,
+            },
+            "rebounds": {
+                "wins": 0,
+                "losses": 0,
+                "total": 0,
+            },
+            "assists": {
+                "wins": 0,
+                "losses": 0,
+                "total": 0,
+            },
         }
         bet_size = 100
-        for best_stat_props in best_props[1:]:
+        for best_stat_props in best_props:
             for (player, best_prop) in best_stat_props:
                 side = "over" if best_prop.predicted_delta > 0 else "under"
-                print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}[{best_prop.predicted_delta}] at {getattr(best_prop, side+'_odds')}")
 
                 player_performance = self.pss.get_player_stat_for_date(player.index, date)
+
                 stat_total = self.calculate_performance(player_performance, best_prop)
+                print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}[{best_prop.predicted_delta}] at {getattr(best_prop, side+'_odds')}. Actual: {stat_total}")
 
                 if player_performance.minutes:
                     if best_prop.predicted_delta > 0:
                         if stat_total > best_prop.line:
                             winnings = self.calculate_return(best_prop.over_odds, bet_size)
-                            record["total"] += winnings
-                            record["wins"] += 1
+                            record[best_prop.stat]["total"] += winnings
+                            record[best_prop.stat]["wins"] += 1
                             print(f"won {winnings}")
                         else:
-                            record["total"] -= bet_size
-                            record["losses"] += 1
+                            record[best_prop.stat]["total"] -= bet_size
+                            record[best_prop.stat]["losses"] += 1
                     else:
                         if stat_total < best_prop.line:
                             winnings = self.calculate_return(best_prop.under_odds, bet_size)
-                            record["total"] += winnings
-                            record["wins"] += 1
+                            record[best_prop.stat]["total"] += winnings
+                            record[best_prop.stat]["wins"] += 1
                             print(f"won {winnings}")
                         else:
-                            record["total"] -= bet_size
-                            record["losses"] += 1
+                            record[best_prop.stat]["total"] -= bet_size
+                            record[best_prop.stat]["losses"] += 1
+        
+        total_wins = sum([record[r]["wins"] for r in record])
+        total_losses = sum([record[r]["losses"] for r in record])
+        total_prof = sum([record[r]["total"] for r in record])
 
-        print(f"{record['wins']} - {record['losses']}")
-        print(f"total: {record['total']}")
-        return(record["wins"], record["losses"], record["total"])
+        print(f"{total_wins} - {total_losses}")
+        print(f"total: {total_prof}")
+        return(record)
 
     def calculate_return(self, odds, bet_size):
         if odds < 0:
@@ -83,21 +100,38 @@ if __name__ == "__main__":
     db = DB()
     bt = Backtester(db)
 
-    date = datetime.strptime("2023-12-01", "%Y-%m-%d")
-    # date = datetime.strptime("2024-01-01", "%Y-%m-%d")
-    end_date = datetime.strptime("2023-12-31", "%Y-%m-%d")
-    # end_date = datetime.strptime("2024-01-21", "%Y-%m-%d")
+    # date = datetime.strptime("2023-12-01", "%Y-%m-%d").date()
+    date = datetime.strptime("2024-01-26", "%Y-%m-%d").date()
+    # end_date = datetime.strptime("2023-12-30", "%Y-%m-%d").date()
+    end_date = datetime.strptime("2024-01-26", "%Y-%m-%d").date()
 
-    wins = 0
-    losses = 0
-    total = 0
+    record = {
+        "points": {
+            "wins": 0,
+            "losses": 0,
+            "total": 0,
+        },
+        "rebounds": {
+            "wins": 0,
+            "losses": 0,
+            "total": 0,
+        },
+        "assists": {
+            "wins": 0,
+            "losses": 0,
+            "total": 0,
+        },
+    }
     while date <= end_date:
-        (date_wins, date_losses, date_total) = bt.backtest_date(date)
-        wins += date_wins
-        losses += date_losses
-        total += date_total
+        date_record = bt.backtest_date(date)
+        for stat in record:
+            record[stat]["wins"] += date_record[stat]["wins"]
+            record[stat]["losses"] += date_record[stat]["losses"]
+            record[stat]["total"] += date_record[stat]["total"]
         date = date + timedelta(days=1)
 
     print("=======Total========")
-    print(f"WINS: {wins}, LOSSES: {losses}")
-    print(f"Estimated Profit: ${total:,.2f}")
+    for stat in record:
+        print(f"------{stat}-----")
+        print(f"WINS: {record[stat]['wins']}, LOSSES: {record[stat]['losses']}")
+        print(f"Estimated Profit: ${record[stat]['total']:,.2f}")
