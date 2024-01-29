@@ -15,9 +15,18 @@ class PropPicker(object):
     def __init__(self, player_service: PlayerService) -> None:
         self.ps = player_service
         self.stat_thresholds = {
-            "points": 6,
-            "rebounds": 3,
-            "assists": 1.5,
+            "points": {
+                "high": 6,
+                "low": 3.5,
+            },
+            "rebounds": {
+                "high": 100,
+                "low": 2,
+            },
+            "assists": {
+                "high": 100,
+                "low": 0,
+            },
         }
         return
 
@@ -82,8 +91,9 @@ class PropPicker(object):
                 if prop_line.predicted_delta > 0 and prop_line.over_odds < -140:
                     continue
 
-                if (abs(prop_line.predicted_delta) > self.stat_thresholds[prop_line.stat]):
-                        # and prop_line.stat in analysis.outliers):
+                if (abs(prop_line.predicted_delta) > self.stat_thresholds[prop_line.stat]["low"]
+                        and abs(prop_line.predicted_delta) < self.stat_thresholds[prop_line.stat]["high"]
+                        and prop_line.stat in analysis.outliers):
                     best_props[prop_line.stat].append((player, prop_line))
 
         for stat in best_props:
