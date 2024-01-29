@@ -56,31 +56,30 @@ class Backtester(object):
                 ):
                     continue
 
-                # player_performance = self.pss.get_player_stat_for_date(player.index, date)
+                player_performance = self.pss.get_player_stat_for_date(player.index, date)
 
-                # stat_total = self.calculate_performance(player_performance, best_prop)
-                stat_total = 0
+                stat_total = self.calculate_performance(player_performance, best_prop)
                 print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}[{best_prop.predicted_delta}] at {getattr(best_prop, side+'_odds')}. Actual: {stat_total}")
 
-                # if player_performance.minutes:
-                #     if best_prop.predicted_delta > 0:
-                #         if stat_total > best_prop.line:
-                #             winnings = self.calculate_return(best_prop.over_odds, bet_size)
-                #             record[best_prop.stat]["total"] += winnings
-                #             record[best_prop.stat]["wins"] += 1
-                #             print(f"won {winnings}")
-                #         else:
-                #             record[best_prop.stat]["total"] -= bet_size
-                #             record[best_prop.stat]["losses"] += 1
-                #     else:
-                #         if stat_total < best_prop.line:
-                #             winnings = self.calculate_return(best_prop.under_odds, bet_size)
-                #             record[best_prop.stat]["total"] += winnings
-                #             record[best_prop.stat]["wins"] += 1
-                #             print(f"won {winnings}")
-                #         else:
-                #             record[best_prop.stat]["total"] -= bet_size
-                #             record[best_prop.stat]["losses"] += 1
+                if player_performance.minutes:
+                    if best_prop.predicted_delta > 0:
+                        if stat_total > best_prop.line:
+                            winnings = self.calculate_return(best_prop.over_odds, bet_size)
+                            record[best_prop.stat]["total"] += winnings
+                            record[best_prop.stat]["wins"] += 1
+                            print(f"won {winnings}")
+                        else:
+                            record[best_prop.stat]["total"] -= bet_size
+                            record[best_prop.stat]["losses"] += 1
+                    else:
+                        if stat_total < best_prop.line:
+                            winnings = self.calculate_return(best_prop.under_odds, bet_size)
+                            record[best_prop.stat]["total"] += winnings
+                            record[best_prop.stat]["wins"] += 1
+                            print(f"won {winnings}")
+                        else:
+                            record[best_prop.stat]["total"] -= bet_size
+                            record[best_prop.stat]["losses"] += 1
 
                 picked_players.append(player.index)
                 if side == "over":
