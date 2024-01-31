@@ -2,6 +2,7 @@ from datetime import datetime
 
 from kornetkover.analysis.matchup_analysis_service import MatchupAnalysisService
 from kornetkover.analysis.prop_picker import PropPicker
+from kornetkover.analysis.services.analysis_service import AnalysisRunner
 from kornetkover.tools.db import DB
 from kornetkover.odds.odds_service import OddsService
 from kornetkover.stats.services.player_service import PlayerService
@@ -12,49 +13,21 @@ db.initialize_tables()
 mas = MatchupAnalysisService(db)
 ps = PlayerService(db)
 os = OddsService(db)
+ar = AnalysisRunner(db)
+pp = PropPicker(ps)
 date = datetime.now().date()
 
-rosters = Scraper.get_rosters_for_upcoming_games()
+all_player_analyses = ar.run_analysis(date)
 
-all_game_analyses = []
-for game, roster in rosters.items():
-    analyses = []
+best_props = pp.pick_props_historical(all_player_analyses, date)
 
-    print(f"----------Analyzing matchups for {game}----------")
-    analyses += mas.analyze_player_matchups(roster["away"], roster["home"])
-    analyses += mas.analyze_player_matchups(roster["home"], roster["away"])
-    print("-------------------------------------------------\n")
+for best_stat_props in best_props:
+    picked_players = []
+    over_picks = 0
+    under_picks = 0
+    for (player, best_prop) in best_stat_props:
+        side = "over" if best_prop.predicted_delta > 0 else "under"
 
-    # Print out diffs between player predictions and player odds
-    for analysis in analyses:
-        player = ps.index_to_player(analysis.player_index)
-        player_odds = os.get_player_odds(player.index, date)
+        print(f"picking {side} {best_prop.line} {best_prop.stat} prop for {player.name}[{best_prop.predicted_delta}] at {getattr(best_prop, side+'_odds')}")
 
-        if not player_odds:
-            continue
-
-        used_stats = ["points", "rebounds", "assists"]
-        display_str = f"[{player.name:<20}]: "
-        for stat in used_stats:
-            for prop_line in player_odds.prop_lines:
-                if prop_line.stat != stat:
-                    continue
-
-                stat_diff = round(getattr(analysis.prediction, stat) - prop_line.line, 2)
-                display_str += f"{stat}: {stat_diff:<8}"
-
-        print(display_str)
-
-    print("-------------------------------------------------\n")
-    all_game_analyses += analyses
-
-pp = PropPicker(ps)
-best_props = pp.pick_props(all_game_analyses, date)
-
-for player, prop_lines in best_props:
-    display_str = f"{player.name:<20}"
-    for prop_line in prop_lines:
-        display_str += f"{prop_line.stat:<15}: {round(prop_line.predicted_delta, 2):<8}"
-
-    print(display_str)
-
+        picked_players.append(player.index)
