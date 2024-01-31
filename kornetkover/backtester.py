@@ -34,13 +34,6 @@ class Backtester(object):
             for (player, best_prop) in best_stat_props:
                 side = "over" if best_prop.predicted_delta > 0 else "under"
 
-                # if (
-                #     player.index in picked_players or
-                #     (side == "over" and over_picks >= 4) or
-                #     (side == "under" and under_picks >= 4)
-                # ):
-                #     continue
-
                 player_performance = self.pss.get_player_stat_for_date(player.index, date)
 
                 stat_total = self.calculate_performance(player_performance, best_prop)
@@ -57,6 +50,7 @@ class Backtester(object):
                             result = "win"
                         else:
                             result = "loss"
+                result = "win"
 
                 self.tracker.bets.append(Bet(player, best_prop, date, side, result))
 
@@ -87,16 +81,17 @@ if __name__ == "__main__":
     db = DB()
     bt = Backtester(db)
 
-    # date = datetime.strptime("2023-12-01", "%Y-%m-%d").date()
-    date = datetime.strptime("2024-01-29", "%Y-%m-%d").date()
+    # date = datetime.strptime("2023-11-01", "%Y-%m-%d").date()
+    date = datetime.strptime("2024-01-01", "%Y-%m-%d").date()
 
-    # end_date = datetime.strptime("2023-12-30", "%Y-%m-%d").date()
-    end_date = datetime.strptime("2024-01-29", "%Y-%m-%d").date()
+    # end_date = datetime.strptime("2023-11-30", "%Y-%m-%d").date()
+    end_date = datetime.strptime("2024-01-31", "%Y-%m-%d").date()
 
     while date <= end_date:
         bt.backtest_date(date)
         date = date + timedelta(days=1)
 
+    bt.tracker.print_totals()
     for stat in ["points", "rebounds", "assists"]:
-        bt.tracker.print_totals(stat=stat)
+        bt.tracker.print_totals(bet_size=10, stat=stat)
         bt.tracker.analyze_totals(stat=stat)

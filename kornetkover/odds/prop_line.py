@@ -11,5 +11,14 @@ class PropLine(object):
     def add_predicted_delta(self, predicted_delta: float) -> None:
         self.predicted_delta = predicted_delta
 
+    def get_odds(self) -> int:
+        if not self.predicted_delta:
+            return None
+
+        if self.predicted_delta >=0:
+            return int(self.over_odds)
+        
+        return int(self.under_odds)
+
     def to_db(self):
         return (self.stat, self.line, self.over_odds, self.under_odds)

@@ -24,8 +24,9 @@ class Tracker(object):
             
 
         display_str = stat if stat else "Total"
+        winrate = win_count / (win_count + loss_count) if (win_count + loss_count) else 0
         print(f"======={display_str}========")
-        print(f"WINS: {win_count}, LOSSES: {loss_count}")
+        print(f"WINS: {win_count}, LOSSES: {loss_count}, WIN RATE: {winrate}")
         print(f"Estimated Profit: ${total:,.2f}")
 
     def analyze_totals(self, stat: str = None):

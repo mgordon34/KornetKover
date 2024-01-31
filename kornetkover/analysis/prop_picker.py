@@ -99,5 +99,4 @@ class PropPicker(object):
         for stat in best_props:
             best_props[stat].sort(key=lambda item: abs(item[1].predicted_delta), reverse=True)
 
-        # return [props[:3] for props in best_props.values()]
         return [props for props in best_props.values()]
