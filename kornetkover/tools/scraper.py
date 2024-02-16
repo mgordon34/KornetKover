@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import List, Tuple
 import time
 
 from bs4 import BeautifulSoup
@@ -7,6 +8,7 @@ import requests
 from unidecode import unidecode
 
 from kornetkover.odds.prop_line import PropLine
+from kornetkover.stats.models.game import Game
 from kornetkover.tools.db import DB
 
 base_url = "https://www.basketball-reference.com"
@@ -113,12 +115,15 @@ class Scraper(object):
             if game_date != date:
                 continue
 
-            games.append([team["href"].split("/")[2] for team in game.find_all("a")[1:]])
+            teams = game.find_all("a")[1:]
+            away_team = teams[0]["href"].split("/")[2]
+            home_team = teams[1]["href"].split("/")[2]
+            games.append(Game(0, home_team, away_team, game_date))
 
         return games
 
     @classmethod
-    def _scrape_playing_players(cls, team, missing_players=[]):
+    def scrape_playing_players(cls, team, missing_players=[]):
         time.sleep(4)
         url = "https://www.basketball-reference.com/teams/{}/2024.html"
         page = requests.get(url.format(team))
@@ -133,7 +138,7 @@ class Scraper(object):
 
         player_soup = soup.find(id="per_game").find("tbody").find_all("tr")
 
-        players = {"starting": [], "bench": []}
+        players = []
         for player in player_soup:
             index = player.find("a")["href"].split("/")[3].split(".")[0]
 
@@ -145,12 +150,9 @@ class Scraper(object):
                 print(f"{index} is no longer active on {team}")
                 continue
 
-            avg_min = cls._get_avg_minutes_from_player_tr(player)
             if index not in missing_players and index in active_roster:
-                if avg_min > 20 and len(players["starting"]) <= 8:
-                    players["starting"].append(index)
-                elif avg_min > 10:
-                    players["bench"].append(index)
+                if len(players) < 8:
+                    players.append(index)
 
         return players
 
@@ -161,44 +163,43 @@ class Scraper(object):
                 return float(column.text)
 
     @classmethod
-    def _get_missing_players(cls):
+    def get_missing_players(cls):
         url = "https://www.basketball-reference.com/friv/injuries.fcgi"
         page = requests.get(url)
         soup = BeautifulSoup(page.content, "html.parser")
 
-        missing_players = defaultdict(lambda: {"out":[],"dtd":[]})
+        missing_players = []
         players = soup.find(id="injuries").find("tbody").find_all("tr")
         for player in players:
             index = player.find("th")["data-append-csv"]
             data = player.find_all("td")
-            team = data[0].find("a")["href"].split("/")[2]
             status = data[2].text
+
             if "out" in status.lower() or "questionable" in status.lower():
-                missing_players[team]["out"].append(index)
-            elif status.startswith("Day To Day"):
-                missing_players[team]["dtd"].append(index)
+                missing_players.append(index)
 
         return missing_players
 
     @classmethod
     def get_rosters_for_upcoming_games(cls):
         game_list = cls.scrape_upcoming_games()
-        missing_players = cls._get_missing_players()
+        missing_players = cls.get_missing_players()
 
         games = {}
         for game in game_list:
-            away_team = game[0]
-            home_team = game[1]
+            away_players = cls.scrape_playing_players(game.away_index, missing_players[game.away_index]["out"])
+            home_players = cls.scrape_playing_players(game.home_index, missing_players[game.home_index]["out"])
 
-            away_players = cls._scrape_playing_players(away_team, missing_players[away_team]["out"])
-            home_players = cls._scrape_playing_players(home_team, missing_players[home_team]["out"])
-
-            games[away_team + home_team] = {
-                "away": {"team_name": away_team, **away_players, **missing_players[away_team]},
-                "home": {"team_name": home_team, **home_players, **missing_players[home_team]},
+            games[game.away_index + game.home_index] = {
+                "away": {"team_name": game.away_index, **away_players, **missing_players[game.away_index]},
+                "home": {"team_name": game.home_index, **home_players, **missing_players[game.home_index]},
             }
 
         return games
+
+    @staticmethod
+    def get_roster_for_team(game: Game, missing_player_indexes = List[str]) -> List[Tuple]:
+        return
 
     @classmethod
     def get_prop_lines(cls, date_str: str) -> dict:
@@ -290,9 +291,13 @@ if __name__ == "__main__":
     db = DB()
 
     db.initialize_tables()
-    start_date = datetime.strptime('2024-01-16', '%Y-%m-%d').date()
+    start_date = datetime.strptime('2024-01-30', '%Y-%m-%d').date()
     end_date = datetime.now().date()
     Scraper.scrape_games(start_date, end_date, db)
+    #games = Scraper.scrape_upcoming_games()
+    # for game in games:
+    #     print(game.__dict__)
+
 
     # teams = [('ATL', 'Atlanta Hawks'), ('BOS', 'Boston Celtics'), ('BRK', 'Brooklyn Nets'), ('CHO', 'Charlotte Hornets'), ('CHI', 'Chicago Bulls'), ('CLE', 'Cleveland Cavaliers'), ('DAL', 'Dallas Mavericks'), ('DEN', 'Denver Nuggets'), ('DET', 'Detroit Pistons'), ('GSW', 'Golden State Warriors'), ('HOU', 'Houston Rockets'), ('IND', 'Indiana Pacers'), ('LAC', 'Los Angeles Clippers'), ('LAL', 'Los Angeles Lakers'), ('MEM', 'Memphis Grizzlies'), ('MIA', 'Miami Heat'), ('MIL', 'Milwaukee Bucks'), ('MIN', 'Minnesota Timberwolves'), ('NOP', 'New Orleans Pelicans'), ('NYK', 'New York Knicks'), ('OKC', 'Oklahoma City Thunder'), ('ORL', 'Orlando Magic'), ('PHI', 'Philadelphia 76ers'), ('PHO', 'Phoenix Suns'), ('POR', 'Portland Trail Blazers'), ('SAC', 'Sacramento Kings'), ('SAS', 'San Antonio Spurs'), ('TOR', 'Toronto Raptors'), ('UTA', 'Utah Jazz'), ('WAS', 'Washington Wizards')]
     # db.add_teams(teams)

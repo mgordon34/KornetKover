@@ -110,8 +110,8 @@ if __name__ == "__main__":
     db = DB()
     pos = PropOddsService(db)
 
-    date = datetime.strptime("2023-11-02", "%Y-%m-%d")
-    end_date = datetime.strptime("2023-10-29", "%Y-%m-%d")
+    date = datetime.strptime("2024-01-18", "%Y-%m-%d")
+    end_date = datetime.strptime("2023-12-31", "%Y-%m-%d")
     stats = {
         "points": "player_points_over_under",
         "rebounds": "player_rebounds_over_under",

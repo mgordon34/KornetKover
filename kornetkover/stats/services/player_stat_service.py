@@ -295,7 +295,7 @@ class PlayerStatService(object):
         players: List[Player],
         game: Game,
     ) -> PlayerPer:
-        roster_string = ",".join([f"'{p.index}'" for p in players])
+        roster_string = ",".join([f"'{p.index}'" for p in players if p])
         year = get_nba_year_from_date(game.date)
         sql = f"""SELECT COUNT(*), AVG(pg.minutes), AVG(pg.points), AVG(pg.rebounds), AVG(pg.assists)
                       FROM player_games pg
