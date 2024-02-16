@@ -59,7 +59,12 @@ class PlayerService(object):
     ) -> List[Player]:
         if game.date == datetime.now().date():
             players = Scraper.scrape_playing_players(team, missing_player_indexes)
-            return [self.index_to_player(player) for player in players]
+            roster = []
+            for player in players:
+                player_obj = self.index_to_player(player)
+                if player_obj:
+                    roster.append(player_obj)
+            return roster
 
         return self.get_roster_from_db(game.id, team)
         

@@ -85,7 +85,39 @@ class Tracker(object):
 
             print(f"[>{i/2.0}]wins {win_count}, losses {loss_count}, total: {total}")
 
+    def print_long_shot_report(self, threshold: float = .25, stat: str = None) -> None:
 
+        total_wins = 0
+        total_losses = 0
+        for bet in self.bets:
+            if stat and stat != bet.line.stat:
+                continue
+
+            # if bet.line.predicted_delta < 0:
+            #     continue
+
+            if abs(bet.line.predicted_delta)/bet.line.line < threshold:# or bet.line.line <= 1.5:
+                continue
+
+            if bet.side == "over":
+                if bet.actual > (bet.line.line):
+                # if bet.actual > (bet.line.line + bet.line.line*.25):
+                    # print(f"[{bet.date}]{bet.player.name} line: {bet.line.line} threshold: {bet.line.line + bet.line.line*.25} actual: {bet.actual}")
+                    total_wins += 1
+                else:
+                    total_losses += 1
+            else:
+                if bet.actual < (bet.line.line):
+                # if bet.actual < (bet.line.line - bet.line.line*.25):
+                    # print(f"[{bet.date}]{bet.player.name} line: {bet.line.line} threshold: {bet.line.line - bet.line.line*.25} actual: {bet.actual}")
+                    total_wins += 1
+                else:
+                    total_losses += 1
+
+
+        winrate = total_wins / (total_wins + total_losses) if (total_wins + total_losses) else 0
+        if winrate:
+            print(f"{threshold} Long Shot {stat}: {total_wins}/{total_losses} winrate: {winrate}-------------------------------")
 
     def calculate_return(self, odds, bet_size):
         if odds < 0:

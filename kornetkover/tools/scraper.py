@@ -291,7 +291,7 @@ if __name__ == "__main__":
     db = DB()
 
     db.initialize_tables()
-    start_date = datetime.strptime('2024-01-28', '%Y-%m-%d').date()
+    start_date = datetime.strptime('2024-01-30', '%Y-%m-%d').date()
     end_date = datetime.now().date()
     Scraper.scrape_games(start_date, end_date, db)
     #games = Scraper.scrape_upcoming_games()

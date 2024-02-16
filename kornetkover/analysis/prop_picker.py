@@ -16,8 +16,8 @@ class PropPicker(object):
         self.ps = player_service
         self.stat_thresholds = {
             "points": {
-                "high": 6,
-                "low": 3.5,
+                "high": 100,
+                "low": 3,
             },
             "rebounds": {
                 "high": 100,
@@ -97,6 +97,6 @@ class PropPicker(object):
                     best_props[prop_line.stat].append((player, prop_line))
 
         for stat in best_props:
-            best_props[stat].sort(key=lambda item: abs(item[1].predicted_delta), reverse=True)
+            best_props[stat].sort(key=lambda item: abs(item[1].predicted_delta)/item[1].line, reverse=True)
 
         return [props for props in best_props.values()]
